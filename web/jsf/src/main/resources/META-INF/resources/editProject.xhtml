@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{viewEditProject.fetch()}" onPostback="false" immediate="true"/>
+    <p:importEnum type="com.github.mbto.funnyranks.webapp.PojoStatus" var="PojoStatus"/>
+</f:metadata>
+
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Edit project</ui:define>
+<ui:define name="head">
+<script type="text/javascript">
+    function showDbPassword(){
+    var field = $('#edProjForm\\:iPwd');
+    if (field.attr('type') === 'password') {
+        field.attr('type', 'text');
+    } else {
+        field.attr('type', 'password');
+    } }
+</script>
+</ui:define>
+
+<ui:define name="center">
+<p:messages id="fetchMsgs" showSummary="true" showDetail="true" rendered="#{empty viewEditProject.selectedProject}"/>
+<ui:fragment rendered="#{not empty viewEditProject.selectedProject}">
+<p:outputPanel id="edProjOutPanel" style="width:600px;">
+<p:panel id="edProjPanel" header="#{viewEditProject.selectedProject.name}[#{viewEditProject.selectedProject.id}]">
+    <p:button id="edBtnKnServers" value="Edit ports [#{viewEditProject.portsAtBroker} of #{viewEditProject.portsAtAllBrokers}]"
+              href="/portsByProject?projectId=#{viewEditProject.selectedProject.id}" icon="ui-icon-arrowthick-1-e"/>
+
+    <p:separator/>
+    <h:form id="edProjNameForm">
+        <p:panelGrid columns="2" style="width:100%;" styleClass="ui-panelgrid-blank ui-fluid">
+            <h:outputText value="Reg date" />
+            <h:outputText value="#{viewEditProject.selectedProject.regDatetime}">
+                <f:convertDateTime pattern="yyyy-MM-dd HH:mm:ss" type="localDateTime"/>
+            </h:outputText>
+
+            <p:outputLabel value="Name" for="iName" />
+            <p:inputText id="iName" value="#{viewEditProject.selectedProject.name}" required="true" placeholder="Some CS project"
+                         onkeypress="if(event.keyCode == 13) { return false; }"/>
+
+            <p:outputLabel value="Description" for="iDesc" />
+            <p:inputTextarea id="iDesc" value="#{viewEditProject.selectedProject.description}" placeholder="Optional additional information"/>
+
+            <p:outputLabel value="Language" for="iLang" />
+            <p:selectOneMenu id="iLang" value="#{viewEditProject.selectedProject.language}" required="true">
+                <f:selectItems value="#{dependentUtil.getAVAILABLE_LANGUAGES()}" />
+            </p:selectOneMenu>
+
+            <p:outputLabel value="Merge type" for="iMergeType" />
+            <p:selectOneMenu id="iMergeType" value="#{viewEditProject.selectedProject.mergeType}" required="true">
+                <f:selectItems value="#{dependentUtil.getAVAILABLE_MERGE_TYPES()}" />
+            </p:selectOneMenu>
+        </p:panelGrid>
+        <p:tooltip for="iLang" escape="false" value="Affects to country name from&lt;br/&gt;MaxMind GeoLite2 country database"/>
+
+        <p:commandButton id="saveSettingsBtn" value="Save settings"
+                         process="@form" update="edProjPanel"
+                         actionListener="#{viewEditProject.saveSettings()}"
+                         icon="ui-icon-check"/>
+    </h:form>
+
+    <p:separator/>
+    <h:form id="edProjForm">
+        <p:panelGrid columns="2" style="width:100%;" styleClass="ui-panelgrid-blank ui-fluid">
+            <p:outputLabel value="DB host:port" for="iHP" />
+            <p:inputText id="iHP" value="#{viewEditProject.selectedProject.databaseHostport}" required="true" placeholder="example:com:3306"
+                         onkeypress="if(event.keyCode == 13) { return false; }"/>
+
+            <p:outputLabel value="DB schema" for="iSchema" />
+            <p:inputText id="iSchema" value="#{viewEditProject.selectedProject.databaseSchema}" required="true" placeholder="funnyranks_stats"
+                         validator="mySQLNamingValidator" onkeypress="if(event.keyCode == 13) { return false; }"/>
+
+            <p:outputLabel value="DB username" for="iUsername" />
+            <p:inputText id="iUsername" value="#{viewEditProject.selectedProject.databaseUsername}" required="true" placeholder="funnyranks_stats"
+                         onkeypress="if(event.keyCode == 13) { return false; }"/>
+
+            <p:outputLabel value="DB password" for="iPwd" />
+            <p:columnGroup>
+                <p:password id="iPwd" redisplay="true" value="#{viewEditProject.selectedProject.databasePassword}"
+                            required="true" style="width:95%;margin-right:5px;" onkeypress="if(event.keyCode == 13) { return false; }" />
+                <p:commandLink value="?" onclick="showDbPassword();return false;"/>
+            </p:columnGroup>
+
+            <p:outputLabel value="DB server timezone" for="iTZs" />
+            <p:selectOneMenu id="iTZs" value="#{viewEditProject.selectedProject.databaseServerTimezone}" required="true" height="400">
+                <f:selectItems value="#{dependentUtil.getAVAILABLE_TIME_ZONES()}" />
+            </p:selectOneMenu>
+        </p:panelGrid>
+
+        <p:dataTable id="drPropsTblId" value="#{viewEditProject.currentDriverPropertyRows}" var="row"
+                     editable="true" emptyMessage="No driver properties found"
+                     rowStyleClass="#{row.status == PojoStatus.TO_REMOVE ? 'propToRemove' : null}"
+                     style="margin-top:10px;" styleClass="ui-fluid">
+            <f:facet name="header">
+                <p:link value="Driver properties (dev.mysql.com)" href="https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-configuration-properties.html" target="_blank" style="font-weight:normal;" />
+            </f:facet>
+            <p:ajax event="rowEdit" partialSubmit="true" listener="#{viewEditProject.onRowEdit}" update="edProjForm:addDrPropBtn edProjForm:saveDBCBtn msgs" />
+            <p:ajax event="rowEditCancel" partialSubmit="true"/>
+
+            <p:column headerText="Key">
+                <p:cellEditor>
+                    <f:facet name="output"><h:outputText value="#{row.pojo.key}" /></f:facet>
+                    <f:facet name="input"><p:inputText value="#{row.pojo.key}" required="true" label="Key" placeholder="Key"
+                                                       onkeypress="if(event.keyCode == 13) { return false; }"/></f:facet>
+                </p:cellEditor>
+            </p:column>
+            <p:column headerText="Value">
+                <p:cellEditor>
+                    <f:facet name="output"><h:outputText value="#{row.pojo.value}" /></f:facet>
+                    <f:facet name="input"><p:inputText value="#{row.pojo.value}" converter="#{stringAddSpaceIfEmptyConverter}" required="true" label="Value" placeholder="Value"
+                                                       onkeypress="if(event.keyCode == 13) { return false; }"/></f:facet>
+                </p:cellEditor>
+            </p:column>
+            <p:column style="width:32px">
+                <p:rowEditor />
+            </p:column>
+            <p:column style="width:8px">
+                <ui:fragment rendered="#{row.status == PojoStatus.TO_REMOVE}">
+                    <p:commandLink value="+" immediate="true" partialSubmit="true" title="Restore"
+                                   process="@this" update="drPropsTblId edProjForm:saveDBCBtn" style="text-decoration: none;"
+                                   onstart="PF('buiProjects').show()" oncomplete="PF('buiProjects').hide()"
+                                   actionListener="#{viewEditProject.onRestoreProperty(row)}"/>
+                </ui:fragment>
+                <ui:fragment rendered="#{row.status != PojoStatus.TO_REMOVE}">
+                    <p:commandLink value="-" immediate="true" partialSubmit="true" title="Remove"
+                                   process="@this" update="drPropsTblId edProjForm:saveDBCBtn" style="text-decoration: none;"
+                                   onstart="PF('buiProjects').show()" oncomplete="PF('buiProjects').hide()"
+                                   actionListener="#{viewEditProject.onRemoveProperty(row)}"/>
+                </ui:fragment>
+            </p:column>
+        </p:dataTable>
+
+        <p:commandButton id="addDrPropBtn" value="Add driver property" immediate="true" partialSubmit="true"
+                         process="@this" update="@this drPropsTblId edProjForm:saveDBCBtn" disabled="#{viewEditProject.addDriverPropertyBtnDisabled}"
+                         actionListener="#{viewEditProject.onAddProperty()}" style="margin-top:10px;"
+                         icon="ui-icon-plusthick"/>
+
+        <p:separator />
+        <p:commandButton id="validateBtn" value="Validate"
+                         process="@form" update="@form msgs"
+                         actionListener="#{viewEditProject.validateDatabaseConnection()}"
+                         icon="ui-icon-search" />
+
+        <p:commandButton id="saveDBCBtn" value="Save DB connection" disabled="#{!viewEditProject.connectionValidated}"
+                         process="@this" update="edProjPanel"
+                         actionListener="#{viewEditProject.saveDatabaseConnection()}"
+                         icon="ui-icon-check" style="margin-left:10px;"/>
+
+        <p:commandButton type="button" value="Delete" onclick="PF('confDialDelete').show()" rendered="#{p:ifGranted('broker')}"
+                         icon="ui-icon-closethick" style="float:right;" styleClass="ui-button-danger"/>
+        <p:confirmDialog widgetVar="confDialDelete" header="Confirm" closeOnEscape="true" responsive="true"
+                         message="Are you sure you want to delete project #{viewEditProject.selectedProject.name}[#{viewEditProject.selectedProject.id}] ?">
+
+            <p:commandButton id="deleteBtn" value="Delete" action="#{viewEditProject.delete()}" rendered="#{p:ifGranted('broker')}"
+                         process="@this" update="edBtnKnServers msgs"
+                         onstart="PF('confDialDelete').hide()"
+                         style="margin-left:10px;" icon="ui-icon-closethick"/>
+            <p:commandButton type="button" value="Cancel" onclick="PF('confDialDelete').hide()"
+                         style="float:right;" icon="ui-icon-cancel"/>
+        </p:confirmDialog>
+    </h:form>
+<p:messages id="msgs" showSummary="true" showDetail="true"/>
+</p:panel>
+</p:outputPanel>
+<p:blockUI widgetVar="buiProjects" block="edProjOutPanel"
+trigger="edProjNameForm:saveSettingsBtn edProjForm:validateBtn edProjForm:saveDBCBtn edProjForm:deleteBtn edProjForm:drPropsTblId edProjForm:addDrPropBtn"/>
+</ui:fragment>
+</ui:define>
+</ui:composition>
+</html>

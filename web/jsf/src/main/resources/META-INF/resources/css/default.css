@@ -1,0 +1,18 @@
+.github-fork-ribbon.right-top:before {
+    background-color: #090;
+}
+.ui-widget {
+    font-family:Verdana,Arial,sans-serif;
+    font-size: 100%;
+}
+.ui-widget .ui-widget {
+    font-size: 100%;
+}
+.ui-panelgrid .ui-panelgrid-cell {
+    padding: 0 10px 0 0;
+}
+.propToRemove {
+    background-color: #ffa6a6 !important;
+    background-image: none !important;
+    color: #000000 !important;
+}

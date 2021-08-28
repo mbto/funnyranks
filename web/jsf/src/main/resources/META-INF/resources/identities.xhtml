@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{viewIdentities.fetch()}" onPostback="false" immediate="true"/>
+    <p:importEnum type="com.github.mbto.funnyranks.common.model.funnyranks.enums.ProjectMergeType" var="ProjectMergeType"/>
+</f:metadata>
+
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Identities</ui:define>
+<ui:define name="center">
+<p:messages id="fetchMsgs" showSummary="true" showDetail="true" rendered="#{empty viewIdentities.selectedPortData}"/>
+<ui:fragment rendered="#{not empty viewIdentities.selectedPortData}">
+<p:panel id="showIdentitiesPanel">
+<f:facet name="header">
+<ui:fragment rendered="#{not empty viewIdentities.selectedPortData}">
+    <h:outputText value="#{viewIdentities.selectedPortData.port.value} - "/>
+    <h:outputText value="#{viewIdentities.selectedPortData.game.name}[#{viewIdentities.selectedPortData.game.appId}] - "/>
+    <h:outputText value="#{viewIdentities.selectedPortData.port.name}[#{viewIdentities.selectedPortData.port.id}] - "/>
+    <h:outputText value="#{viewIdentities.selectedPortData.project.name}[#{viewIdentities.selectedPortData.project.id}]"/>
+</ui:fragment>
+</f:facet>
+<h:form>
+<p:commandButton id="flushIdentitiesBtn" value="#{viewIdentities.identitiesCount == 0
+                 ? 'No identities for flush'
+                 : ('Flush ' += viewIdentities.identitiesCount += ' identities')}"
+                 disabled="#{viewIdentities.identitiesCount == 0}"
+                 process="@this" update="@form" immediate="true"
+                 actionListener="${viewIdentities.flushIdentities()}"
+                 onstart="PF('buiIdentities').show()" oncomplete="PF('buiIdentities').hide()"
+                 rendered="#{viewIdentities.selectedPortData.port.brokerId == brokerHolder.currentBrokerId}"
+                 style="margin-right:10px;" icon="ui-icon-arrowthick-1-s"/>
+
+<p:button value="Edit ports [#{viewIdentities.portsAtBroker} of #{viewIdentities.portsAtAllBrokers}]"
+          href="/portsByProject?projectId=#{viewIdentities.selectedPortData.port.projectId}"
+          icon="ui-icon-arrowthick-1-e"
+          rendered="#{not empty viewIdentities.selectedPortData}"/>
+
+<p:messages id="msgs" showSummary="true" showDetail="true"/>
+
+<p:separator/>
+<p:dataTable id="identitiesTblId" value="#{viewIdentities.identitiesView}"
+             reflow="true"
+             var="identityView" emptyMessage="No identities found">
+    <f:facet name="header">Converted #{viewIdentities.sessionsCount} sessions
+        to #{viewIdentities.identitiesCount} identities (#{viewIdentities.identitiesView.size()} sessions)</f:facet>
+
+    <p:column headerText="Identity" groupRow="true" width="200" style="white-space:pre-wrap;">
+        <h:outputText value="#{identityView.identity}"/>
+    </p:column>
+
+    <p:column headerText="Name" width="400" rendered="#{viewIdentities.selectedPortData.project.mergeType != ProjectMergeType.Nick}">
+        <h:outputText value="#{identityView.archivedSessionView.name}"/>
+    </p:column>
+    <p:column headerText="Lifetime" width="130">
+        <h:outputText value="#{identityView.lifeTime}"/>
+    </p:column>
+    <p:column headerText="Dates" width="380">
+        <h:outputText value="#{identityView.dates}"/>
+    </p:column>
+    <p:column headerText="Kills" width="60">
+        <h:outputText value="#{identityView.archivedSessionView.archivedSession.kills}"/>
+    </p:column>
+    <p:column headerText="Deaths" width="60">
+        <h:outputText value="#{identityView.archivedSessionView.archivedSession.deaths}"/>
+    </p:column>
+    <p:column headerText="IP" width="170">
+        <h:outputText value="#{identityView.ip}" rendered="#{empty identityView.archivedSessionView.archivedSession.countryEmoji}"/>
+        <h:outputText value="#{identityView.archivedSessionView.archivedSession.countryEmoji} #{identityView.ip}"
+                      rendered="#{not empty identityView.archivedSessionView.archivedSession.countryEmoji}"
+                      title="#{identityView.archivedSessionView.archivedSession.countryName}" />
+    </p:column>
+    <p:column headerText="Steam ID" width="200">
+        <p:link value="#{identityView.steamId}" rendered="#{not empty identityView.steamId}"
+                href="https://steamcommunity.com/profiles/#{identityView.archivedSessionView.archivedSession.steamId64}" target="_blank"/>
+    </p:column>
+</p:dataTable>
+
+<p:dataTable id="msgsTblId" value="#{viewIdentities.selectedPortData.messages}"
+             reflow="true"
+             rowIndexVar="rowIndexVar"
+             var="pair" emptyMessage="No flush logs found" style="margin-top:10px;">
+    <f:facet name="header">Last flush logs</f:facet>
+    <p:column headerText="№" width="50">
+        <h:outputText value="#{rowIndexVar + 1}"/>
+    </p:column>
+    <p:column headerText="Date" width="180" groupRow="true">
+        <h:outputText value="#{pair.left}">
+            <f:convertDateTime pattern="yyyy-MM-dd HH:mm:ss" type="localDateTime"/>
+        </h:outputText>
+    </p:column>
+    <p:column headerText="Message" style="white-space:pre-wrap;">
+        <h:outputText value="#{pair.right}"/>
+    </p:column>
+</p:dataTable>
+</h:form>
+</p:panel>
+<p:blockUI widgetVar="buiIdentities" block="showIdentitiesPanel"/>
+</ui:fragment>
+</ui:define>
+</ui:composition>
+</html>

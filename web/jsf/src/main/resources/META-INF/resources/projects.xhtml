@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{requestProjects.fetch()}" onPostback="false" immediate="true"/>
+</f:metadata>
+
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Projects</ui:define>
+<ui:define name="center">
+<p:messages id="fetchMsgs" showSummary="true" showDetail="true" rendered="#{empty requestProjects.projects}"/>
+<h:form id="showProjectsForm">
+<p:button value="New project" href="/newProject" style="margin-bottom:10px;" rendered="#{p:ifGranted('broker')}"
+          icon="ui-icon-arrowthick-1-e"/>
+
+<p:dataTable id="projectsTblId" value="#{requestProjects.projects}" var="project" emptyMessage="No projects found"
+             selectionMode="single" rowKey="#{project.id}"
+             reflow="true">
+    <f:facet name="header">Projects</f:facet>
+    <p:ajax event="rowSelect" immediate="true" process="@this" update="@none"/>
+    <p:column headerText="Reg date" width="180">
+        <h:outputText value="#{project.regDatetime}">
+            <f:convertDateTime pattern="yyyy-MM-dd HH:mm:ss" type="localDateTime"/>
+        </h:outputText>
+    </p:column>
+    <p:column headerText="Name" width="350">
+        <h:outputText value="#{project.name}[#{project.id}]" />
+    </p:column>
+    <p:column headerText="Description" width="350">
+        <h:outputText value="#{project.description}" />
+    </p:column>
+    <p:column headerText="Language" width="80">
+        <h:outputText value="#{project.language.literal}" />
+    </p:column>
+    <p:column headerText="Merge type" width="80">
+        <h:outputText value="#{project.mergeType.literal}" />
+    </p:column>
+    <p:column headerText="DB host:port/schema" width="450">
+        <h:outputText value="#{project.databaseHostport}/#{project.databaseSchema}" />
+    </p:column>
+    <p:column headerText="DB server timezone" width="200">
+        <h:outputText value="#{project.databaseServerTimezone.getLiteral()}" />
+    </p:column>
+</p:dataTable>
+</h:form>
+</ui:define>
+</ui:composition>
+</html>

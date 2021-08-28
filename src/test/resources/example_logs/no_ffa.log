@@ -1,0 +1,52 @@
+L 01/08/2021 - 23:44:15: Log file started (file "logs\L0101001.log") (game "cstrike") (version "48/1.1.2.7/Stdio/8308")
+L 01/08/2021 - 23:44:15: Server cvar "pb_welcomemsgs" = "0"
+L 01/08/2021 - 23:44:15: Server cvar "pb_usespeech" = "0"
+L 01/08/2021 - 23:44:15: Server cvar "pb_maxbots" = "16"
+L 01/08/2021 - 23:44:15: Server cvar "pb_bot_quota_match" = "0"
+L 01/08/2021 - 23:44:15: Server cvar "pb_timer_sound" = "0.5"
+L 01/08/2021 - 23:44:15: Server cvar "pb_spray" = "0"
+L 01/08/2021 - 23:44:15: Server cvar "pb_numfollowuser" = "5"
+L 01/08/2021 - 23:44:15: Server cvar "pb_minbotskill" = "80"
+L 01/08/2021 - 23:44:15: Server cvar "pb_maxbotskill" = "90"
+L 01/08/2021 - 23:44:15: Server cvar "pb_maxweaponpickup" = "10"
+L 01/08/2021 - 23:44:15: Server cvar "pb_autokill" = "0"
+L 01/08/2021 - 23:44:15: Server cvar "pb_autokilldelay" = "15"
+L 01/08/2021 - 23:44:15: Server cvar "pb_maxcamptime" = "15"
+L 01/08/2021 - 23:44:15: Server cvar "pb_dangerfactor" = "0"
+L 01/08/2021 - 23:44:15: Server cvar "pb_chat" = "0"
+L 01/08/2021 - 23:44:15: Server cvar "pb_latencybot" = "2"
+L 01/08/2021 - 23:44:15: Server cvar "pb_radio" = "0"
+L 01/08/2021 - 23:44:15: Server cvar "pb_restrweapons" = "10000000000000000000000001"
+L 01/08/2021 - 23:44:15: Server cvar "amx_language" = "en"
+L 01/08/2021 - 23:44:15: Founded spawns @ T:20 CT:20
+L 01/08/2021 - 23:44:15: Server cvar "amx_nextmap" = "de_airstrip"
+L 01/08/2021 - 23:44:15: Server cvar "sv_accelerate" = "5"
+L 01/08/2021 - 23:44:15: Server cvar "sv_stopspeed" = "75"
+L 01/08/2021 - 23:44:15: Started map "de_dust2" (CRC "1159425449")
+L 01/08/2021 - 23:44:15: "Admin<1><STEAM_0:0:123456><>" connected, address "255.0.0.142"
+L 01/08/2021 - 23:44:16: "Admin<1><STEAM_0:0:123456><>" entered the game
+L 01/08/2021 - 23:44:16: World triggered "Round_Start"
+L 01/08/2021 - 23:44:17: "Admin<1><STEAM_0:0:123456><>" STEAM USERID validated
+L 01/08/2021 - 23:44:17: "Admin<1><STEAM_0:0:123456><>" joined team "CT"
+L 01/08/2021 - 23:44:28: "desch<2><BOT><>" entered the game
+L 01/08/2021 - 23:44:28: "desch<2><BOT><>" joined team "CT"
+L 01/08/2021 - 23:45:10: "Admin<1><STEAM_ID_LAN><CT>" killed "desch<2><BOT><CT>" with "ak47"
+L 01/08/2021 - 23:45:15: "Admin<1><STEAM_ID_LAN><CT>" killed "desch<2><BOT><CT>" with "ak47"
+L 01/08/2021 - 23:45:24: Server cvar "sv_restart" = "1"
+L 01/08/2021 - 23:45:25: World triggered "Restart_Round_(1_second)"
+L 01/08/2021 - 23:45:25: Team "CT" scored "0" with "2" players
+L 01/08/2021 - 23:45:25: Team "TERRORIST" scored "0" with "0" players
+L 01/08/2021 - 23:45:25: Server cvar "sv_restart" = "0"
+L 01/08/2021 - 23:45:26: World triggered "Round_Start"
+L 01/08/2021 - 23:45:36: "Admin<1><STEAM_ID_LAN><CT>" killed "desch<2><BOT><CT>" with "ak47"
+L 01/08/2021 - 23:45:51: "Admin<1><STEAM_ID_LAN><CT>" killed "desch<2><BOT><CT>" with "ak47"
+L 01/08/2021 - 23:45:56: [META] ini: Read plugin config for: AMX Mod X
+L 01/08/2021 - 23:45:56: [META] ini: Read plugin config for: POD-Bot mm
+L 01/08/2021 - 23:45:56: [META] dll: Updating plugins...
+L 01/08/2021 - 23:45:56: [META] dll: Finished updating 10 plugins; kept 2, loaded 0, unloaded 0, reloaded 0, delayed 0
+L 01/08/2021 - 23:45:56: "Admin<-1><><CT>" disconnected
+L 01/08/2021 - 23:45:56: "desch<-1><><CT>" disconnected
+L 01/08/2021 - 23:45:56: World triggered "Round_Draw" (CT "0") (T "0")
+L 01/08/2021 - 23:45:56: World triggered "Round_End"
+L 01/08/2021 - 23:45:56: Server shutdown
+L 01/08/2021 - 23:45:56: Log file closed
