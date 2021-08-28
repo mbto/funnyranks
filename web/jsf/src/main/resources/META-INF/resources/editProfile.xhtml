@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{viewEditProfile.fetch()}" onPostback="false" immediate="true"/>
+</f:metadata>
+
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Edit profile</ui:define>
+<ui:define name="center">
+<p:messages id="fetchMsgs" showSummary="true" showDetail="true" rendered="#{empty viewEditProfile.selectedManager}"/>
+<ui:fragment rendered="#{not empty viewEditProfile.selectedManager}">
+<p:outputPanel id="edProfileOutPanel" style="width:500px;margin:auto;">
+<h:form id="edProfileForm">
+    <p:panelGrid style="width:100%;">
+        <f:facet name="header">
+            <p:row>
+                <p:column colspan="2">Edit profile</p:column>
+            </p:row>
+        </f:facet>
+        <p:row>
+            <p:column style="width:30px;">
+                <h:outputText value="Reg date" />
+            </p:column>
+            <p:column>
+                <h:outputText value="#{viewEditProfile.selectedManager.regDatetime}">
+                    <f:convertDateTime pattern="yyyy-MM-dd HH:mm:ss" type="localDateTime"/>
+                </h:outputText>
+            </p:column>
+        </p:row>
+        <p:row>
+            <p:column>
+                <h:outputText value="Username"/>
+            </p:column>
+            <p:column>
+                <h:outputText value="#{viewEditProfile.selectedManager.username}[#{viewEditProfile.selectedManager.id}]" />
+            </p:column>
+        </p:row>
+        <p:row>
+            <p:column>
+                <p:outputLabel value="Password" for="iPwd" />
+            </p:column>
+            <p:column styleClass="ui-fluid">
+                <p:password id="iPwd" redisplay="true" value="#{viewEditProfile.selectedManager.password}"
+                            required="true" feedback="true"
+                            onkeypress="if(event.keyCode == 13) { return false; }"/>
+            </p:column>
+        </p:row>
+        <p:row>
+            <p:column>
+                <h:outputText value="Role"/>
+            </p:column>
+            <p:column>
+                <h:outputText value="#{viewEditProfile.selectedManager.role.literal}" />
+            </p:column>
+        </p:row>
+        <p:row rendered="#{p:ifGranted('project')}">
+            <p:column>
+                <h:outputText value="Projects"/>
+            </p:column>
+            <p:column>
+                <h:outputText value="#{viewEditProfile.projects}" escape="false" style="white-space:pre-wrap;"/>
+            </p:column>
+        </p:row>
+        <p:row>
+            <p:column colspan="2">
+                <p:commandButton id="saveBtn" value="Save"
+                                 process="@this iPwd" update="@form"
+                                 actionListener="#{viewEditProfile.save}"
+                                 icon="ui-icon-check" style="float:right;" />
+            </p:column>
+        </p:row>
+    </p:panelGrid>
+    <p:messages id="msgs" showSummary="true" showDetail="true"/>
+</h:form>
+</p:outputPanel>
+<p:blockUI block="edProfileOutPanel" trigger="edProfileForm:saveBtn"/>
+</ui:fragment>
+</ui:define>
+</ui:composition>
+</html>

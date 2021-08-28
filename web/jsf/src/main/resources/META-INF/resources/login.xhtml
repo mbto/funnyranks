@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Login</ui:define>
+<ui:define name="center">
+<p:outputPanel style="width:500px;margin:auto;">
+    <h:form prependId="false" action="../j_spring_security_check">
+        <p:panelGrid>
+            <f:facet name="header">
+                <p:row><p:column colspan="2">Login</p:column></p:row>
+            </f:facet>
+            <p:row>
+                <p:column>
+                    <h:outputLabel value="Username" for="username"/>
+                </p:column>
+                <p:column>
+                    <p:inputText id="username" required="true" onkeypress="if(event.keyCode == 13) { return false; }"/>
+                </p:column>
+            </p:row>
+            <p:row>
+                <p:column>
+                    <h:outputLabel value="Password" for="password"/>
+                </p:column>
+                <p:column>
+                    <p:inputText id="password" type="password" required="true" onkeypress="if(event.keyCode == 13) { return false; }"/>
+                </p:column>
+            </p:row>
+            <p:row>
+                <p:column colspan="2">
+                    <h:outputText value="Login failed" rendered="${param['failed'] != null}" />
+                    <p:commandButton value="Login" ajax="false" partialSubmit="false"
+                                     icon="ui-icon-check" style="float:right;"/>
+                </p:column>
+            </p:row>
+        </p:panelGrid>
+    </h:form>
+</p:outputPanel>
+</ui:define>
+</ui:composition>
+</html>

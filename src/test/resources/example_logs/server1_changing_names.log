@@ -1,0 +1,33 @@
+L 01/08/2021 - 13:15:00: "Name1<5><STEAM_0:0:123123123123><>" connected, address "12.12.12.12:27005"
+L 01/08/2021 - 13:16:00: "Name1<5><STEAM_0:0:123123123123><>" entered the game
+L 01/08/2021 - 13:17:00: "Name1<5><STEAM_0:0:123123123123><CT>" killed "Name2<6><STEAM_0:1:987654><T>" with "m4a1"
+L 01/08/2021 - 13:18:00: "Name1<5><STEAM_0:0:123123123123><CT>" killed "Name2<6><STEAM_0:1:987654><T>" with "m4a1"
+L 01/08/2021 - 13:19:00: "Name1<5><STEAM_0:0:123123123123><CT>" changed name to "Name5"
+L 01/08/2021 - 13:20:00: "Name5<5><STEAM_0:0:123123123123><CT>" changed name to "NAME5"
+L 01/08/2021 - 13:21:00: "NAME5<5><STEAM_0:0:123123123123><CT>" changed name to "name5"
+L 01/08/2021 - 13:22:00: "name5<5><STEAM_0:0:123123123123><CT>" changed name to "NAme5"
+L 01/08/2021 - 13:23:00: "NAme5<5><STEAM_0:0:123123123123><CT>" changed name to "Name5"
+L 01/08/2021 - 13:24:00: "Name5<5><STEAM_0:0:123123123123><CT>" killed "Name2<6><STEAM_0:1:987654><T>" with "m4a1"
+L 01/08/2021 - 13:25:00: "Name5<5><STEAM_0:0:123123123123><CT>" committed suicide with "grenade"
+L 01/08/2021 - 13:26:00: "Name5<5><STEAM_0:0:123123123123><CT>" killed "Name2<6><STEAM_0:1:987654><T>" with "m4a1"
+L 01/08/2021 - 13:27:00: "Name5<5><STEAM_0:0:123123123123><CT>" changed name to "Name9"
+L 01/08/2021 - 13:28:00: "Name9<5><STEAM_0:0:123123123123><CT>" killed "Name2<6><STEAM_0:1:987654><T>" with "m4a1"
+L 01/08/2021 - 13:29:00: "Name9<5><STEAM_0:0:123123123123><CT>" disconnected
+L 01/08/2021 - 13:30:00: "Name1<7><STEAM_0:0:999999999999><>" connected, address "24.24.24.24:27005"
+L 01/08/2021 - 13:31:00: "Name1<7><STEAM_0:0:999999999999><>" entered the game
+L 01/08/2021 - 13:32:00: "Name1<7><STEAM_0:0:999999999999><CT>" killed "Name2<6><STEAM_0:1:987654><T>" with "m4a1"
+L 01/08/2021 - 13:33:00: "Name1<7><STEAM_0:0:999999999999><CT>" killed "Name2<6><STEAM_0:1:987654><T>" with "m4a1"
+L 01/08/2021 - 13:34:00: "Name1<7><STEAM_0:0:999999999999><CT>" changed name to "Name9"
+L 01/08/2021 - 13:35:00: "Name9<7><STEAM_0:0:999999999999><CT>" changed name to "name9"
+L 01/08/2021 - 13:36:00: "name9<7><STEAM_0:0:999999999999><CT>" changed name to "NAME9"
+L 01/08/2021 - 13:37:00: "NAME9<7><STEAM_0:0:999999999999><CT>" killed "Name2<6><STEAM_0:1:987654><T>" with "m4a1"
+L 01/08/2021 - 13:38:00: "NAME9<7><STEAM_0:0:999999999999><CT>" changed name to "naME9"
+L 01/08/2021 - 13:39:00: "naME9<7><STEAM_0:0:999999999999><CT>" changed name to "Name9"
+L 01/08/2021 - 13:40:00: "Name9<7><STEAM_0:0:999999999999><CT>" killed "Name2<6><STEAM_0:1:987654><T>" with "m4a1"
+L 01/08/2021 - 13:41:00: "Name2<6><STEAM_0:1:987654><T>" committed suicide with "grenade"
+L 01/08/2021 - 13:42:00: "Name9<7><STEAM_0:0:999999999999><CT>" killed "Name2<6><STEAM_0:1:987654><T>" with "m4a1"
+L 01/08/2021 - 13:43:00: "Name9<7><STEAM_0:0:999999999999><CT>" changed name to "Name1"
+L 01/08/2021 - 13:44:00: "Name1<7><STEAM_0:0:999999999999><CT>" killed "Name2<6><STEAM_0:1:987654><T>" with "m4a1"
+L 01/08/2021 - 13:45:00: "Name1<7><STEAM_0:0:999999999999><CT>" disconnected
+L 01/08/2021 - 13:46:00: "Name2<6><STEAM_0:1:987654><CT>" disconnected
+L 01/08/2021 - 13:47:00: Server shutdown

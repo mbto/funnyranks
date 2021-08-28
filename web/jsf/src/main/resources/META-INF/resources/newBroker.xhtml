@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{viewNewBroker.fetch()}" onPostback="false" immediate="true"/>
+</f:metadata>
+
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">New broker</ui:define>
+<ui:define name="center">
+<p:outputPanel id="edBrokerOutPanel" style="width:500px;">
+<p:panel id="edBrokerPanel" header="New broker">
+    <h:form id="edBrokerForm">
+        <p:panelGrid columns="2" styleClass="ui-panelgrid-blank ui-fluid">
+            <h:outputText value="Reg date" />
+            <h:outputText value="#{viewNewBroker.selectedBroker.regDatetime}">
+                <f:convertDateTime pattern="yyyy-MM-dd HH:mm:ss" type="localDateTime"/>
+            </h:outputText>
+
+            <p:outputLabel value="Name" for="iName" />
+            <p:inputText id="iName" value="#{viewNewBroker.selectedBroker.name}" required="true" placeholder="broker_N"
+                         validator="#{viewNewBroker.validateBrokerName}" onkeypress="if(event.keyCode == 13) { return false; }"/>
+
+            <p:outputLabel value="Description" for="iDesc" />
+            <p:inputTextarea id="iDesc" value="#{viewNewBroker.selectedBroker.description}" cols="100" placeholder="Optional additional information"/>
+        </p:panelGrid>
+        <p:tooltip for="iName" escape="false" value="Broker name from application.properties"/>
+
+        <p:separator />
+        <p:commandButton id="saveBtn" value="Save"
+                         process="@form" update="edBrokerPanel"
+                         action="#{viewNewBroker.save()}"
+                         icon="ui-icon-check"/>
+    </h:form>
+<p:messages id="msgs" showSummary="true" showDetail="true"/>
+</p:panel>
+</p:outputPanel>
+<p:blockUI block="edBrokerOutPanel" trigger="edBrokerForm:saveBtn"/>
+</ui:define>
+</ui:composition>
+</html>

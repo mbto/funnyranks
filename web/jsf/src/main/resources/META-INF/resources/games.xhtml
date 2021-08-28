@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{viewGame.fetch()}" onPostback="false" immediate="true"/>
+    <p:importEnum type="com.github.mbto.funnyranks.webapp.PojoStatus" var="PojoStatus"/>
+</f:metadata>
+
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Games</ui:define>
+<ui:define name="center">
+<div class="ui-xl-8 ui-lg-12 ui-md-12 ui-sm-12 ui-g-nopad">
+<h:form id="edGamesForm">
+<p:dataTable id="gamesTblId" value="#{viewGame.currentRows}" var="row"
+             editable="true" emptyMessage="No games found" rowIndexVar="rowIndexVar"
+             reflow="true"
+             rowStyleClass="#{row.status == PojoStatus.TO_REMOVE ? 'propToRemove' : null}"
+             styleClass="ui-fluid">
+    <f:facet name="header">#{viewGame.currentRows.size()} games</f:facet>
+    <p:ajax event="rowEdit" partialSubmit="true" listener="#{viewGame.onRowEdit}" update="@form:addGameBtn @form:msgs" />
+    <p:ajax event="rowEditCancel" partialSubmit="true"/>
+    <p:column headerText="№" width="50">
+        <h:outputText value="#{rowIndexVar + 1}"/>
+    </p:column>
+    <p:column headerText="App ID" width="100">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="#{row.pojo.appId}"/></f:facet>
+            <f:facet name="input">
+                <p:inputNumber id="iAppId" value="#{row.pojo.appId}" required="true" label="App ID"
+                                                 minValue="0" maxValue="4294967295" thousandSeparator=""
+                                                 placeholder="12345"
+                                                 validator="#{viewGame.validateAppId}"
+                                                 onkeypress="if(event.keyCode == 13) { return false; }">
+                    <f:attribute name="rowIndexVar" value="#{rowIndexVar}"/>
+                </p:inputNumber>
+                <p:tooltip for="iAppId" escape="false"
+                           value="Steam application id for converting/validating UDP datagrams from&lt;br/&gt;https://developer.valvesoftware.com/wiki/Steam_Application_IDs#Server_Files"/>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+    <p:column headerText="Name" width="500">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="#{row.pojo.name}"/></f:facet>
+            <f:facet name="input"><p:inputText value="#{row.pojo.name}" required="true" label="Name"
+                                               placeholder="Public server"
+                                               onkeypress="if(event.keyCode == 13) { return false; }"/></f:facet>
+        </p:cellEditor>
+    </p:column>
+    <p:column headerText="Listener port" width="120">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="#{row.pojo.listenerPort}"/></f:facet>
+            <f:facet name="input">
+                <p:inputNumber id="iListenerPort" value="#{row.pojo.listenerPort}" required="true" label="Listener port"
+                                                 minValue="1" maxValue="65535" thousandSeparator=""
+                                                 placeholder="27499"
+                                                 validator="#{viewGame.validateListenerPort}"
+                                                 onkeypress="if(event.keyCode == 13) { return false; }">
+                    <f:attribute name="rowIndexVar" value="#{rowIndexVar}"/>
+                </p:inputNumber>
+                <p:tooltip for="iListenerPort" escape="false"
+                           value="UDP port for consuming game server logs&lt;br/&gt;Value from 1 to 65535"/>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+    <p:column width="32">
+        <p:rowEditor />
+    </p:column>
+    <p:column width="10">
+        <ui:fragment rendered="#{row.status == PojoStatus.TO_REMOVE}">
+            <p:commandLink value="+" immediate="true" partialSubmit="true" title="Restore"
+                           process="@this" update="gamesTblId" style="text-decoration: none;"
+                           onstart="PF('buiGames').show()" oncomplete="PF('buiGames').hide()"
+                           actionListener="#{viewGame.onRestoreRow(row)}"/>
+        </ui:fragment>
+        <ui:fragment rendered="#{row.status != PojoStatus.TO_REMOVE}">
+            <p:commandLink value="-" immediate="true" partialSubmit="true" title="Remove"
+                           process="@this" update="gamesTblId" style="text-decoration: none;"
+                           onstart="PF('buiGames').show()" oncomplete="PF('buiGames').hide()"
+                           actionListener="#{viewGame.onRemoveRow(row)}"/>
+        </ui:fragment>
+    </p:column>
+</p:dataTable>
+<p:commandButton id="addGameBtn" value="Add game" immediate="true" partialSubmit="true"
+                 process="@this" update="@this gamesTblId" disabled="#{viewGame.addServerBtnDisabled}"
+                 actionListener="#{viewGame.onAddGame()}"
+                 icon="ui-icon-plusthick" style="margin: 10px 10px 0 0"/>
+
+<p:commandButton id="saveBtn" value="Save"
+                 process="@this" update="gamesTblId addGameBtn msgs"
+                 actionListener="#{viewGame.save()}"
+                 icon="ui-icon-check"/>
+<p:messages id="msgs" showSummary="true" showDetail="true"/>
+</h:form>
+<p:blockUI widgetVar="buiGames" block="edGamesForm"
+trigger="edGamesForm:addGameBtn edGamesForm:saveBtn edGamesForm:gamesTblId"/>
+</div>
+</ui:define>
+</ui:composition>
+</html>

@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{viewDashboard.fetch()}" onPostback="false" immediate="true"/>
+</f:metadata>
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Dashboard</ui:define>
+<ui:define name="head">
+<style type="text/css">
+.stActive {
+    background-color: #d7ffd7 !important;
+    background-image: none !important;
+    color: #000000 !important;
+}
+.stNotActive {
+    background-color: #fff0d7 !important;
+    background-image: none !important;
+    color: #000000 !important;
+}
+</style>
+</ui:define>
+<ui:define name="center">
+<ui:fragment rendered="#{p:ifGranted('broker')}">
+<div class="ui-g" style="margin-bottom:10px;">
+<div class="ui-g-12 ui-xl-3 ui-lg-5 ui-md-12 ui-sm-12 ui-g-nopad">
+<h:form id="dbrForm">
+<!--<p:poll process="@this" update="oP oF oM oA oTF" async="true" interval="1" listener="#{viewDashboard.calculateMemory}"/>-->
+<p:panelGrid style="width:350px;">
+<f:facet name="header">
+    <p:row><p:column colspan="2">Memory</p:column></p:row>
+</f:facet>
+<p:row>
+    <p:column width="10">Processors</p:column>
+    <p:column><h:outputText id="oP" value="#{viewDashboard.processors}"/></p:column>
+</p:row>
+<p:row>
+    <p:column>Free</p:column>
+    <p:column><h:outputText id="oF" value="#{viewDashboard.freeMemory} mb"/></p:column>
+</p:row>
+<p:row>
+    <p:column>Max</p:column>
+    <p:column><h:outputText id="oM" value="#{viewDashboard.maxMemory} mb"/></p:column>
+</p:row>
+<p:row>
+    <p:column>Allocated</p:column>
+    <p:column><h:outputText id="oA" value="#{viewDashboard.allocatedMemory} mb"/></p:column>
+</p:row>
+<p:row>
+    <p:column>Total free</p:column>
+    <p:column><h:outputText id="oTF" value="#{viewDashboard.totalFreeMemory} mb"/></p:column>
+</p:row>
+</p:panelGrid>
+</h:form>
+</div>
+<div class="ui-g-12 ui-xl-3 ui-lg-5 ui-md-12 ui-sm-12 ui-g-nopad">
+<p:panelGrid id="executorsTblId" style="width:350px;">
+<f:facet name="header">
+    <p:row>
+        <p:column colspan="4">Executors pools sizes</p:column>
+    </p:row>
+    <p:row>
+        <p:column/>
+        <p:column style="font-weight:normal;">core</p:column>
+        <p:column style="font-weight:normal;">max</p:column>
+        <p:column style="font-weight:normal;">tasks</p:column>
+    </p:row>
+</f:facet>
+<p:row>
+    <p:column>Receiver</p:column>
+    <p:column>#{receiverTE.getCorePoolSize()}</p:column>
+    <p:column>#{receiverTE.getMaxPoolSize()}</p:column>
+    <p:column style="background-color: #{empty receiverTE.getThreadPoolExecutor().getQueue()
+    ? '#d7ffd7' : '#fff0d7'}">#{receiverTE.getThreadPoolExecutor().getQueue().size()}</p:column>
+</p:row>
+    <p:row>
+    <p:column>Broker</p:column>
+    <p:column>#{distributorTE.getCorePoolSize()}</p:column>
+    <p:column>#{distributorTE.getMaxPoolSize()}</p:column>
+    <p:column style="background-color: #{empty distributorTE.getThreadPoolExecutor().getQueue()
+    ? '#d7ffd7' : '#fff0d7'}">#{distributorTE.getThreadPoolExecutor().getQueue().size()}</p:column>
+</p:row>
+<p:row>
+    <p:column>Consumer</p:column>
+    <p:column>#{consumerTE.getCorePoolSize()}</p:column>
+    <p:column>#{consumerTE.getMaxPoolSize()}</p:column>
+    <p:column style="background-color: #{empty consumerTE.getThreadPoolExecutor().getQueue()
+    ? '#d7ffd7' : '#fff0d7'}">#{consumerTE.getThreadPoolExecutor().getQueue().size()}</p:column>
+</p:row>
+<p:row>
+    <p:column>Sender</p:column>
+    <p:column>#{senderTE.getCorePoolSize()}</p:column>
+    <p:column>#{senderTE.getMaxPoolSize()}</p:column>
+    <p:column style="background-color: #{empty senderTE.getThreadPoolExecutor().getQueue()
+    ? '#d7ffd7' : '#fff0d7'}">#{senderTE.getThreadPoolExecutor().getQueue().size()}</p:column>
+</p:row>
+<p:row>
+    <p:column>Scheduler</p:column>
+    <p:column>-</p:column>
+    <p:column>#{taskScheduler.getPoolSize()}</p:column>
+    <p:column style="background-color: #{empty taskScheduler.getScheduledThreadPoolExecutor().getQueue()
+    ? '#d7ffd7' : '#fff0d7'}">#{taskScheduler.getScheduledThreadPoolExecutor().getQueue().size()}</p:column>
+</p:row>
+</p:panelGrid>
+</div>
+<div class="ui-g-12 ui-xl-3 ui-lg-12 ui-md-12 ui-sm-12 ui-g-nopad">
+<p:dataTable id="partitionsTblId" value="#{partitionById.entrySet()}" var="partitionEntry" emptyMessage="No partitions found"
+style="width:350px;">
+    <f:facet name="header">Partitions</f:facet>
+    <p:column headerText="ID" width="16">
+        <h:outputText value="#{partitionEntry.key}"/>
+    </p:column>
+    <p:column headerText="Active" width="82">
+        <h:outputText value="#{partitionEntry.value.countPorts(true)}"/>
+    </p:column>
+    <p:column headerText="Not active" width="82">
+        <h:outputText value="#{partitionEntry.value.countPorts(false)}"/>
+    </p:column>
+    <p:column headerText="Tasks"
+              style="background-color: #{empty partitionEntry.value.partition ? '#d7ffd7' : '#fff0d7'}">
+        <h:outputText value="#{partitionEntry.value.partition.size()}"/>
+    </p:column>
+</p:dataTable>
+</div>
+</div>
+</ui:fragment>
+<p:outputPanel id="showAvailPortsPanel">
+<h:form id="showAvailPortsForm">
+<p:commandButton value="Make fakes" process="@this" update="flushBtn portDatasTblId msgs" immediate="true"
+                 rendered="#{brokerHolder.devEnvironment}"
+                 onstart="PF('buiAvailPorts').show()" oncomplete="PF('buiAvailPorts').hide()"
+                 actionListener="#{viewDashboard.makeFakes()}"
+                 icon="ui-icon-circle-arrow-s"/>
+
+<p:commandButton id="flushBtn" value="#{viewDashboard.sessionsCount == 0
+                 ? 'No sessions for flush' :
+                 ('Flush ' += viewDashboard.sessionsCount += ' sessions')}"
+                 disabled="#{viewDashboard.sessionsCount == 0}"
+                 process="@this" update="@this msgs portDatasTblId" immediate="true"
+                 actionListener="#{viewDashboard.flushSessions()}"
+                 onstart="PF('buiAvailPorts').show()" oncomplete="PF('buiAvailPorts').hide()"
+                 icon="ui-icon-arrowthick-1-s"/>
+
+<p:commandButton value="Apply broker changes"
+                 process="@this" update="portDatasTblId msgs executorsTblId partitionsTblId" immediate="true"
+                 rendered="#{p:ifGranted('broker')}"
+                 actionListener="#{viewDashboard.applyBrokerChanges()}"
+                 onstart="PF('buiAvailPorts').show()" oncomplete="PF('buiAvailPorts').hide()"
+                 icon="ui-icon-refresh"/>
+<p:messages id="msgs" showSummary="true" showDetail="true" escape="false"/>
+<p:dataTable id="portDatasTblId" value="#{viewDashboard.sortedPortData}" var="portData" emptyMessage="No ports found"
+             reflow="true"
+             selectionMode="single" rowKey="#{portData.port.value}"
+             rowStyleClass="#{portData.portActive ? 'stActive' : 'stNotActive'}" style="margin-top:10px;">
+    <f:facet name="header">
+        #{viewDashboard.sortedPortData.size()} ports |
+        broker: #{brokerHolder.availableBrokers.get(brokerHolder.currentBrokerId).name}[#{brokerHolder.currentBrokerId}]
+    </f:facet>
+
+    <p:ajax event="rowSelect" immediate="true" process="@this" update="@none"
+            listener="#{viewDashboard.onRowSelect}"/>
+
+    <p:column headerText="Partition ID" width="60" style="text-align:center;">
+        <h:outputText value="#{partitionByPort.get(portData.port.value).partitionId}"/>
+    </p:column>
+<!--    <p:column headerText="Status" width="50">-->
+<!--        <i title="#{portData.portActive ? 'Active' : 'Not active'}" style="margin:auto;"-->
+<!--           class="ui-icon #{portData.portActive ? 'ui-icon-check' : 'ui-icon-close'}"/>-->
+<!--    </p:column>-->
+    <p:column headerText="Listener port" width="60">
+        <h:outputText value="#{portData.game.listenerPort}"/>
+    </p:column>
+    <p:column headerText="Port" width="60">
+        <h:outputText value="#{portData.port.value}"/>
+    </p:column>
+    <p:column headerText="Sessions" width="65">
+        <h:outputText value="#{viewDashboard.getSessionsCountByPort(portData.port.value)}"/>
+    </p:column>
+    <p:column headerText="Game" width="350">
+        <h:outputText value="#{portData.game.name}[#{portData.game.appId}]"/>
+    </p:column>
+    <p:column headerText="Project" width="400">
+        <h:outputText value="#{portData.project.name}[#{portData.project.id}]"/>
+    </p:column>
+    <p:column headerText="Name" width="400">
+        <h:outputText value="#{portData.port.name}[#{portData.port.id}]"/>
+    </p:column>
+    <p:column headerText="FFA" width="60">
+        <h:outputText value="#{portData.port.ffa ? 'Yes' : 'No'}" rendered="#{not empty portData.port.ffa}"/>
+    </p:column>
+    <p:column headerText="Ignore bots" width="60">
+        <h:outputText value="#{portData.port.ignoreBots ? 'Yes' : 'No'}" rendered="#{not empty portData.port.ignoreBots}"/>
+    </p:column>
+    <p:column headerText="Start session on action" width="80">
+        <h:outputText value="#{portData.port.startSessionOnAction ? 'Yes' : 'No'}" rendered="#{not empty portData.port.startSessionOnAction}"/>
+    </p:column>
+</p:dataTable>
+</h:form>
+</p:outputPanel>
+<p:blockUI widgetVar="buiAvailPorts" block="showAvailPortsPanel"/>
+</ui:define>
+</ui:composition>
+</html>

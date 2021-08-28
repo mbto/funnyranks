@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{requestBrokers.fetch()}" onPostback="false" immediate="true"/>
+    <f:viewAction action="#{viewEditMaxMindDbState.fetch()}" onPostback="false" immediate="true"/>
+</f:metadata>
+
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Brokers</ui:define>
+<ui:define name="head">
+<style type="text/css">
+.currentBroker {
+    background-color: #d7ffd7 !important;
+    background-image: none !important;
+    color: #000000 !important;
+}
+</style>
+</ui:define>
+<ui:define name="center">
+<h:form id="showBrokersForm">
+    <p:button value="New broker" href="/newBroker" style="margin-bottom:10px;" icon="ui-icon-arrowthick-1-e"/>
+
+    <p:dataTable id="brokersTblId" value="#{requestBrokers.brokers}" var="broker" emptyMessage="No brokers found"
+                 selectionMode="single" rowKey="#{broker.id}"
+                 reflow="true" style="max-width:1200px;"
+                 rowStyleClass="#{broker.id == brokerHolder.currentBrokerId ? 'currentBroker' : null}">
+        <f:facet name="header">Brokers</f:facet>
+        <p:ajax event="rowSelect" immediate="true" process="@this" update="@none" />
+        <p:column headerText="Reg date" width="45">
+            <h:outputText value="#{broker.regDatetime}">
+                <f:convertDateTime pattern="yyyy-MM-dd HH:mm:ss" type="localDateTime"/>
+            </h:outputText>
+        </p:column>
+        <p:column headerText="Name" width="26">
+            <h:outputText value="#{broker.name}[#{broker.id}]" />
+        </p:column>
+        <p:column headerText="Description" width="26">
+            <h:outputText value="#{broker.description}" />
+        </p:column>
+        <p:column headerText="Ports" width="3">
+            <h:outputText value="#{requestBrokers.portsAtAllBrokers.get(broker.id)}" />
+        </p:column>
+    </p:dataTable>
+</h:form>
+<br/>
+<div class="ui-xl-5 ui-lg-6 ui-md-10 ui-sm-12 ui-g-nopad">
+    <h:form id="GeoLite2UrlForm">
+        <p:panelGrid>
+            <f:facet name="header">
+                <p:row><p:column colspan="2">GeoLite2 Country archive URL</p:column></p:row>
+            </f:facet>
+            <p:row>
+                <p:column colspan="2" styleClass="ui-fluid">
+                    <p:inputTextarea id="iGeoLite2Url" cols="50" rows="7"
+                                     value="#{viewEditMaxMindDbState.geolite2CountryDataUrl}"
+                                     placeholder="https://path_to_archive/data.zip"/>
+                </p:column>
+            </p:row>
+            <p:row>
+                <p:column style="background-color: #{not empty viewEditMaxMindDbState.maxmindDbState ? '#d7ffd7' : '#fff0d7'} !important;">
+                    <h:outputText value="GeoLite2 country database state"/>
+                </p:column>
+                <p:column style="background-color: #{not empty viewEditMaxMindDbState.maxmindDbState ? '#d7ffd7' : '#fff0d7'} !important;">
+                    <h:outputText value="#{viewEditMaxMindDbState.maxmindDbState.date} (#{viewEditMaxMindDbState.maxmindDbState.size} bytes)"
+                                  rendered="#{not empty viewEditMaxMindDbState.maxmindDbState}"/>
+                    <h:outputText value="Not installed"
+                                  rendered="#{empty viewEditMaxMindDbState.maxmindDbState}"/>
+                </p:column>
+            </p:row>
+            <p:row>
+                <p:column colspan="2">
+                    <i>GeoLite2 country database must be converted with
+                    <p:link value="https://github.com/mbto/maxmind-geoip2-csv2sql-converter" target="_blank"
+                            href="https://github.com/mbto/maxmind-geoip2-csv2sql-converter"/>
+                    <br/>You can always use this archive URL: https://github.com/mbto/public_keeper/raw/master/funnyranks/country_en_ru.zip</i>
+                </p:column>
+            </p:row>
+            <p:row>
+                <p:column colspan="2">
+                    <p:commandButton id="saveBtn" value="Save"
+                                     process="@this iGeoLite2Url" update="msgs"
+                                     actionListener="#{viewEditMaxMindDbState.save}"
+                                     icon="ui-icon-check" style="float:right;"/>
+                </p:column>
+            </p:row>
+        </p:panelGrid>
+        <p:messages id="msgs" showSummary="true" showDetail="true"/>
+    </h:form>
+</div>
+<p:blockUI block="GeoLite2UrlForm" trigger="GeoLite2UrlForm:saveBtn"/>
+</ui:define>
+</ui:composition>
+</html>

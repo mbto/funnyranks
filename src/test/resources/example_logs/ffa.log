@@ -1,0 +1,37 @@
+L 01/08/2021 - 23:41:05: Log file started (file "logs\L0101001.log") (game "cstrike") (version "48/1.1.2.7/Stdio/8308")
+L 01/08/2021 - 23:41:05: Founded spawns @ T:20 CT:20
+L 01/08/2021 - 23:41:05: Server cvar "amx_nextmap" = "cs_havana"
+L 01/08/2021 - 23:41:05: Started map "de_dust2" (CRC "1159425449")
+L 01/08/2021 - 23:41:05: "Admin<1><STEAM_0:0:123456><>" entered the game
+L 01/08/2021 - 23:41:06: World triggered "Round_Start"
+L 01/08/2021 - 23:41:06: "Admin<1><STEAM_0:0:123456><>" joined team "CT"
+L 01/08/2021 - 23:41:14: "FENIX2H<2><BOT><>" entered the game
+L 01/08/2021 - 23:41:14: "FENIX2H<2><BOT><>" joined team "TERRORIST"
+L 01/08/2021 - 23:41:14: World triggered "Game_Commencing"
+L 01/08/2021 - 23:41:14: World triggered "Game_Commencing" (CT "0") (T "0")
+L 01/08/2021 - 23:41:14: World triggered "Round_End"
+L 01/08/2021 - 23:41:17: World triggered "Round_Start"
+L 01/08/2021 - 23:41:22: Kick: "FENIX2H<2><STEAM_ID_LAN><>" was kicked by "Admin"
+L 01/08/2021 - 23:41:22: "FENIX2H<2><BOT><TERRORIST>" disconnected
+L 01/08/2021 - 23:41:24: "relish -w 800<3><BOT><>" entered the game
+L 01/08/2021 - 23:41:24: "relish -w 800<3><BOT><>" joined team "TERRORIST"
+L 01/08/2021 - 23:41:24: World triggered "Game_Commencing"
+L 01/08/2021 - 23:41:24: World triggered "Game_Commencing" (CT "0") (T "0")
+L 01/08/2021 - 23:41:24: World triggered "Round_End"
+L 01/08/2021 - 23:41:27: Kick: "relish -w 800<3><STEAM_ID_LAN><>" was kicked by "Admin"
+L 01/08/2021 - 23:41:27: "relish -w 800<3><BOT><TERRORIST>" disconnected
+L 01/08/2021 - 23:41:27: World triggered "Round_Start"
+L 01/08/2021 - 23:41:30: "CeHb^Oaa<4><BOT><>" entered the game
+L 01/08/2021 - 23:41:30: "CeHb^Oaa<4><BOT><>" joined team "CT"
+L 01/08/2021 - 23:42:01: "Admin<1><STEAM_ID_LAN><CT>" killed "CeHb^Oaa<4><BOT><CT>" with "ak47"
+L 01/08/2021 - 23:42:16: "Admin<1><STEAM_ID_LAN><CT>" killed "CeHb^Oaa<4><BOT><CT>" with "ak47"
+L 01/08/2021 - 23:42:21: [META] ini: Read plugin config for: AMX Mod X
+L 01/08/2021 - 23:42:21: [META] ini: Read plugin config for: POD-Bot mm
+L 01/08/2021 - 23:42:21: [META] dll: Updating plugins...
+L 01/08/2021 - 23:42:21: [META] dll: Finished updating 10 plugins; kept 2, loaded 0, unloaded 0, reloaded 0, delayed 0
+L 01/08/2021 - 23:42:21: "Admin<-1><><CT>" disconnected
+L 01/08/2021 - 23:42:21: "CeHb^Oaa<-1><><CT>" disconnected
+L 01/08/2021 - 23:42:21: World triggered "Round_Draw" (CT "0") (T "0")
+L 01/08/2021 - 23:42:21: World triggered "Round_End"
+L 01/08/2021 - 23:42:21: Server shutdown
+L 01/08/2021 - 23:42:21: Log file closed

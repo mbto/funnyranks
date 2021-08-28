@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{viewManager.fetch()}" onPostback="false" immediate="true"/>
+    <p:importEnum type="com.github.mbto.funnyranks.webapp.PojoStatus" var="PojoStatus"/>
+</f:metadata>
+
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Managers</ui:define>
+<ui:define name="center">
+<div class="ui-xl-12 ui-lg-12 ui-md-12 ui-sm-12 ui-g-nopad">
+<h:form id="edManagersForm">
+<p:dataTable id="managersTblId" value="#{viewManager.currentRows}" var="row"
+             editable="true" emptyMessage="No managers found" rowIndexVar="rowIndexVar"
+             reflow="true"
+             rowStyleClass="#{row.status == PojoStatus.TO_REMOVE ? 'propToRemove' : null}"
+             styleClass="ui-fluid">
+    <f:facet name="header">#{viewManager.currentRows.size()} managers</f:facet>
+    <p:ajax event="rowEdit" partialSubmit="true" listener="#{viewManager.onRowEdit}" update="@form:addManagerBtn @form:msgs" />
+    <p:ajax event="rowEditCancel" partialSubmit="true"/>
+    <p:column headerText="№" width="50">
+        <h:outputText value="#{rowIndexVar + 1}"/>
+    </p:column>
+    <p:column headerText="Username" width="150">
+        <p:cellEditor>
+            <f:facet name="output">
+                <h:outputText value="#{row.pojo.username}[#{row.pojo.id}]" rendered="#{not empty row.primaryKey}"/>
+                <h:outputText value="#{row.pojo.username}" rendered="#{empty row.primaryKey}"/>
+            </f:facet>
+            <f:facet name="input">
+                <p:inputText value="#{row.pojo.username}" required="true" label="Username"
+                             validator="#{viewManager.validateManagerUsername}"
+                             onkeypress="if(event.keyCode == 13) { return false; }">
+                    <f:attribute name="rowIndexVar" value="#{rowIndexVar}"/>
+                </p:inputText>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+    <p:column headerText="Password" width="150">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="bcrypted" style="font-style:italic;" rendered="#{not empty row.pojo.password}"/></f:facet>
+            <f:facet name="input"><p:password redisplay="true" value="#{row.pojo.password}" required="true" feedback="true"
+                                              onkeypress="if(event.keyCode == 13) { return false; }"/></f:facet>
+        </p:cellEditor>
+    </p:column>
+    <p:column headerText="Description" width="150">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="#{row.pojo.description}" style="white-space:pre-wrap;"/></f:facet>
+            <f:facet name="input"><p:inputTextarea value="#{row.pojo.description}" cols="100"
+                                                   placeholder="Optional additional information"/></f:facet>
+        </p:cellEditor>
+    </p:column>
+    <p:column headerText="Role" width="80">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="#{row.pojo.role.literal}"/></f:facet>
+            <f:facet name="input">
+                <p:selectOneMenu id="iRole" value="#{row.pojo.role}" required="true">
+                    <f:selectItems value="#{dependentUtil.getAVAILABLE_MANAGER_ROLES()}" />
+                </p:selectOneMenu>
+                <p:tooltip for="iRole" escape="false"
+                           value="Broker: can manage broker and all projects&lt;br/&gt;Project: can manage only selected projects"/>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+    <p:column headerText="Active" width="60">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="#{row.pojo.active ? 'Yes' : 'No'}" rendered="#{not empty row.pojo.active}"/></f:facet>
+            <f:facet name="input">
+                <p:selectBooleanButton value="#{row.pojo.active}" onLabel="Yes" offLabel="No" required="true"/>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+    <p:column headerText="Projects" width="150">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="#{row.pojo.availableProjectIds.size()}" rendered="#{row.pojo.availableProjectIds != null}"/></f:facet>
+            <f:facet name="input">
+                <p:selectCheckboxMenu value="#{row.pojo.availableProjectIds}" label="Choose projects" dynamic="true"
+                                      filter="true" filterMatchMode="contains" panelStyle="width:600px;" scrollHeight="400">
+                    <f:selectItems value="#{viewManager.projects}"/>
+                </p:selectCheckboxMenu>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+    <p:column width="32">
+        <p:rowEditor />
+    </p:column>
+    <p:column width="10">
+        <ui:fragment rendered="#{row.status == PojoStatus.TO_REMOVE}">
+            <p:commandLink value="+" immediate="true" partialSubmit="true" title="Restore"
+                           process="@this" update="managersTblId" style="text-decoration: none;"
+                           onstart="PF('buiManagers').show()" oncomplete="PF('buiManagers').hide()"
+                           actionListener="#{viewManager.onRestoreRow(row)}"/>
+        </ui:fragment>
+        <ui:fragment rendered="#{row.status != PojoStatus.TO_REMOVE}">
+            <p:commandLink value="-" immediate="true" partialSubmit="true" title="Remove"
+                           process="@this" update="managersTblId" style="text-decoration: none;"
+                           onstart="PF('buiManagers').show()" oncomplete="PF('buiManagers').hide()"
+                           actionListener="#{viewManager.onRemoveRow(row)}"/>
+        </ui:fragment>
+    </p:column>
+</p:dataTable>
+<p:commandButton id="addManagerBtn" value="Add manager" immediate="true" partialSubmit="true"
+                 process="@this" update="@this managersTblId" disabled="#{viewManager.addServerBtnDisabled}"
+                 actionListener="#{viewManager.onAddManager()}"
+                 icon="ui-icon-plusthick" style="margin: 10px 10px 0 0"/>
+
+<p:commandButton id="saveBtn" value="Save"
+                 process="@this" update="managersTblId addManagerBtn msgs"
+                 actionListener="#{viewManager.save()}"
+                 icon="ui-icon-check"/>
+<p:messages id="msgs" showSummary="true" showDetail="true"/>
+</h:form>
+<p:blockUI widgetVar="buiManagers" block="edManagersForm"
+trigger="edManagersForm:addManagerBtn edManagersForm:saveBtn edManagersForm:managersTblId"/>
+</div>
+</ui:define>
+</ui:composition>
+</html>

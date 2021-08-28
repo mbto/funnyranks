@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{viewEditBroker.fetch()}" onPostback="false" immediate="true"/>
+</f:metadata>
+
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Edit broker</ui:define>
+<ui:define name="center">
+<p:messages id="fetchMsgs" showSummary="true" showDetail="true" rendered="#{empty viewEditBroker.selectedBroker}"/>
+<ui:fragment rendered="#{not empty viewEditBroker.selectedBroker}">
+<p:outputPanel id="edBrokerOutPanel" style="width:500px;">
+<p:panel id="edBrokerPanel" header="#{viewEditBroker.selectedBroker.name}[#{viewEditBroker.selectedBroker.id}]">
+    <h:form id="edBrokerForm">
+        <p:panelGrid columns="2" styleClass="ui-panelgrid-blank ui-fluid">
+            <h:outputText value="Reg date" />
+            <h:outputText value="#{viewEditBroker.selectedBroker.regDatetime}">
+                <f:convertDateTime pattern="yyyy-MM-dd HH:mm:ss" type="localDateTime"/>
+            </h:outputText>
+
+            <h:outputText value="Name"/>
+            <h:outputText value="#{viewEditBroker.selectedBroker.name}" />
+
+            <p:outputLabel value="Description" for="iDesc" />
+            <p:inputTextarea id="iDesc" value="#{viewEditBroker.selectedBroker.description}" cols="100" placeholder="Optional additional information"/>
+        </p:panelGrid>
+
+        <p:separator />
+        <div class="ui-g">
+        <div class="ui-g-12 ui-g-nopad">
+        <p:commandButton id="saveBtn" value="Save" actionListener="#{viewEditBroker.save}"
+                         process="@form" update="edBrokerPanel"
+                         icon="ui-icon-check"/>
+
+        <ui:fragment rendered="#{viewEditBroker.selectedBroker.id != brokerHolder.currentBrokerId}">
+            <p:commandButton type="button" value="Delete" onclick="PF('confDialDelete').show()"
+                             icon="ui-icon-closethick" style="float:right;" styleClass="ui-button-danger"/>
+            <p:confirmDialog widgetVar="confDialDelete" header="Confirm" closeOnEscape="true" responsive="true"
+                message="Are you sure you want to delete broker #{viewEditBroker.selectedBroker.name}[#{viewEditBroker.selectedBroker.id}] ?">
+
+                <p:commandButton value="Delete" action="#{viewEditBroker.delete()}"
+                             process="@this" update="msgs"
+                             onstart="PF('confDialDelete').hide();PF('buiBrokers').show()" oncomplete="PF('buiBrokers').hide()"
+                             icon="ui-icon-closethick" style="margin-left:10px;"/>
+                <p:commandButton type="button" value="Cancel" onclick="PF('confDialDelete').hide()" style="float:right;"
+                             icon="ui-icon-cancel"/>
+            </p:confirmDialog>
+        </ui:fragment>
+        <ui:fragment rendered="#{viewEditBroker.selectedBroker.id == brokerHolder.currentBrokerId}">
+            <p:commandButton type="button" value="Shutdown broker" onclick="PF('confDialDelete').show()"
+                             icon="ui-icon-power" style="float:right;" styleClass="ui-button-danger"/>
+
+            <p:confirmDialog widgetVar="confDialDelete" header="Confirm" closeOnEscape="true" responsive="true"
+                             message="Are you sure you want to shutdown broker #{viewEditBroker.selectedBroker.name}[#{viewEditBroker.selectedBroker.id}] ?">
+
+                <p:commandButton value="Shutdown broker" actionListener="#{viewEditBroker.shutdownBroker()}"
+                                 process="@this" update="@none"
+                                 onstart="PF('confDialDelete').hide();PF('buiBrokers').show()"
+                                 onerror="PF('successDialDeleted').show()"
+                                 icon="ui-icon-power" style="margin-left:10px;"/>
+                <p:commandButton type="button" value="Cancel" onclick="PF('confDialDelete').hide()"
+                                 icon="ui-icon-cancel" style="float:right;"/>
+            </p:confirmDialog>
+            <p:dialog widgetVar="successDialDeleted" header="Success" closeOnEscape="true" modal="true"
+                      width="360" height="90" responsive="true">
+                <h:outputText value="Broker shut downed"/>
+            </p:dialog>
+        </ui:fragment>
+        </div></div>
+    </h:form>
+<p:messages id="msgs" showSummary="true" showDetail="true"/>
+</p:panel>
+</p:outputPanel>
+<p:blockUI widgetVar="buiBrokers" block="edBrokerOutPanel" trigger="edBrokerForm:saveBtn"/>
+</ui:fragment>
+</ui:define>
+</ui:composition>
+</html>

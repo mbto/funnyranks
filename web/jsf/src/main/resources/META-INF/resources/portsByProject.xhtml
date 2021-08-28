@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{viewPortsByProjectId.fetch()}" onPostback="false" immediate="true"/>
+    <p:importEnum type="com.github.mbto.funnyranks.webapp.PojoStatus" var="PojoStatus"/>
+</f:metadata>
+
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Ports</ui:define>
+<ui:define name="center">
+<p:messages id="fetchMsgs" showSummary="true" showDetail="true" rendered="#{empty viewPortsByProjectId.selectedProject}"/>
+<ui:fragment rendered="#{not empty viewPortsByProjectId.selectedProject}">
+<p:panel id="edPortsPanel" header="#{viewPortsByProjectId.selectedProject.name}[#{viewPortsByProjectId.selectedProject.id}]">
+<p:button value="Edit project" href="/editProject?projectId=#{viewPortsByProjectId.selectedProject.id}" icon="ui-icon-arrowthick-1-w"/>
+
+<p:separator/>
+<h:form id="edPortsForm">
+<p:commandButton id="flushSessionsBtn" value="#{viewPortsByProjectId.totalSessionsCount == 0 ? 'No sessions for flush'
+                 : ('Flush ' += viewPortsByProjectId.totalSessionsCount += ' sessions')}"
+                 disabled="#{viewPortsByProjectId.totalSessionsCount == 0}"
+                 process="@this" update="@this portsTblId msgs" immediate="true"
+                 actionListener="#{viewPortsByProjectId.flushProjectSessions()}"
+                 icon="ui-icon-arrowthick-1-s" style="margin-bottom:10px;"/>
+
+<p:commandButton id="applyChangesBtn" value="Apply project changes"
+                 process="@this" update="portsTblId msgs" immediate="true"
+                 actionListener="#{viewPortsByProjectId.applyProjectChanges()}"
+                 icon="ui-icon-refresh" style="margin-bottom:10px;"/>
+
+<p:dataTable id="portsTblId" value="#{viewPortsByProjectId.currentRows}" var="row"
+             editable="true" emptyMessage="No ports found" rowIndexVar="rowIndexVar"
+             reflow="true"
+             rowStyleClass="#{row.status == PojoStatus.TO_REMOVE ? 'propToRemove' : null}"
+             styleClass="ui-fluid">
+    <f:facet name="header">
+        #{viewPortsByProjectId.currentRows.size()} ports |
+        Current broker: #{brokerHolder.availableBrokers.get(brokerHolder.currentBrokerId).name}[#{brokerHolder.currentBrokerId}]
+    </f:facet>
+    <p:ajax event="rowEdit" partialSubmit="true" listener="#{viewPortsByProjectId.onRowEdit}" update="@form:addPortBtn msgs" />
+    <p:ajax event="rowEditCancel" partialSubmit="true"/>
+
+    <p:column headerText="Port" width="50">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="#{row.pojo.value}"/></f:facet>
+            <f:facet name="input"><p:inputNumber id="iPort" value="#{row.pojo.value}" required="true" label="Port"
+                                                 minValue="1" maxValue="65535" thousandSeparator=""
+                                                 placeholder="27015"
+                                                 validator="#{viewPortsByProjectId.validatePortValue}"
+                                                 onkeypress="if(event.keyCode == 13) { return false; }">
+                <f:attribute name="rowIndexVar" value="#{rowIndexVar}"/>
+            </p:inputNumber>
+                <p:tooltip for="iPort" escape="false"
+                           value="Local port of game server from which logs&lt;br/&gt;will be received - value from 1 to 65535&lt;br/&gt;You can't use existed ports of other&lt;br/&gt;projects at same broker:&lt;br/&gt;#{viewPortsByProjectId.existedPorts}"
+                           rendered="#{not empty viewPortsByProjectId.existedPorts}"/>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+
+    <p:column headerText="Sessions" width="65">
+        <p:link value="#{viewPortsByProjectId.projectSessionsCountByPort.getOrDefault(row.pojo.value, 0)}"
+                href="/identities?port=#{row.pojo.value}" target="_blank" rendered="#{not empty row.pojo.value}"/>
+    </p:column>
+
+    <p:column headerText="Game" width="350">
+        <p:cellEditor>
+            <f:facet name="output">
+                <h:outputText value="#{viewPortsByProjectId.gameByAppId.get(row.pojo.gameAppId).name}[#{row.pojo.gameAppId}]" rendered="#{not empty row.pojo.gameAppId}"/>
+            </f:facet>
+            <f:facet name="input">
+                <p:selectOneMenu value="#{row.pojo.gameAppId}" required="true" label="Game" height="400">
+                    <f:selectItem itemLabel="Select game" noSelectionOption="true" itemDisabled="true"/>
+                    <f:selectItems value="#{viewPortsByProjectId.gameByAppId.entrySet()}"
+                                   var="entry"
+                                   itemLabel="#{entry.value.name}[#{entry.key}]"
+                                   itemValue="#{entry.value.appId}" itemDisabled="#{!messageHandlerByAppId.containsKey(entry.value.appId)}"/>
+                </p:selectOneMenu>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+
+    <p:column headerText="Name" width="400">
+        <p:cellEditor>
+            <f:facet name="output">
+                <h:outputText value="#{row.pojo.name}[#{row.pojo.id}]" rendered="#{not empty row.primaryKey}"/>
+                <h:outputText value="#{row.pojo.name}" rendered="#{empty row.primaryKey}"/>
+            </f:facet>
+            <f:facet name="input"><p:inputText value="#{row.pojo.name}" required="true" label="Name" placeholder="Public server"
+                                               onkeypress="if(event.keyCode == 13) { return false; }"/></f:facet>
+        </p:cellEditor>
+    </p:column>
+
+    <p:column headerText="Active" width="60">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="#{row.pojo.active ? 'Yes' : 'No'}" rendered="#{not empty row.pojo.active}"/></f:facet>
+            <f:facet name="input">
+                <p:selectBooleanButton id="iActive" value="#{row.pojo.active}" onLabel="Yes" offLabel="No" required="true"/>
+                <p:tooltip for="iActive" escape="false"
+                           value="Should receive packets from this port?&lt;br/&gt;Yes: receive&lt;br/&gt;No: UDP packets from this port will be ignored"/>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+
+    <p:column headerText="FFA" width="60">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="#{row.pojo.ffa ? 'Yes' : 'No'}" rendered="#{not empty row.pojo.ffa}"/></f:facet>
+            <f:facet name="input">
+                <p:selectBooleanButton id="iFFA" value="#{row.pojo.ffa}" onLabel="Yes" offLabel="No" required="true"/>
+                <p:tooltip for="iFFA" escape="false"
+                           value="game server is FREE-FOR-ALL mode&lt;br/&gt;(Example: CS-DeathMatch): Yes/No"/>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+
+    <p:column headerText="Ignore bots" width="60">
+        <p:cellEditor>
+            <f:facet name="output"><h:outputText value="#{row.pojo.ignoreBots ? 'Yes' : 'No'}" rendered="#{not empty row.pojo.ignoreBots}"/></f:facet>
+            <f:facet name="input">
+                <p:selectBooleanButton id="iIgnBots" value="#{row.pojo.ignoreBots}" onLabel="Yes" offLabel="No" required="true"/>
+                <p:tooltip for="iIgnBots" escape="false"
+                           value="Yes: ignore statistics, when killer or victim is BOT&lt;br/&gt;No: don't ignore (include all player's)"/>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+
+    <p:column headerText="Start session on action" width="60">
+        <p:cellEditor rendered="#{row.pojo.brokerId == brokerHolder.currentBrokerId}">
+            <f:facet name="output"><h:outputText value="#{row.pojo.startSessionOnAction ? 'Yes' : 'No'}" rendered="#{not empty row.pojo.startSessionOnAction}"/></f:facet>
+            <f:facet name="input">
+                <p:selectBooleanButton id="iSSOA" value="#{row.pojo.startSessionOnAction}" onLabel="Yes" offLabel="No" required="true"/>
+                <p:tooltip for="iSSOA" escape="false"
+                           value="Yes: start player's session on event&lt;br/&gt;'... killed ... with ...' (not for kreedz servers)&lt;br/&gt;No: start player's session on event&lt;br/&gt;'... connected, address ...' or&lt;br/&gt;'... entered the game'"/>
+            </f:facet>
+        </p:cellEditor>
+    </p:column>
+
+    <p:column width="32">
+        <p:rowEditor />
+    </p:column>
+    <p:column width="10">
+        <ui:fragment rendered="#{row.status == PojoStatus.TO_REMOVE}">
+            <p:commandLink value="+" immediate="true" partialSubmit="true" title="Restore"
+                           process="@this" update="portsTblId" style="text-decoration: none;"
+                           onstart="PF('buiPorts').show()" oncomplete="PF('buiPorts').hide()"
+                           actionListener="#{viewPortsByProjectId.onRestoreRow(row)}"/>
+        </ui:fragment>
+        <ui:fragment rendered="#{row.status != PojoStatus.TO_REMOVE}">
+            <p:commandLink value="-" immediate="true" partialSubmit="true" title="Remove"
+                           process="@this" update="portsTblId" style="text-decoration: none;"
+                           onstart="PF('buiPorts').show()" oncomplete="PF('buiPorts').hide()"
+                           actionListener="#{viewPortsByProjectId.onRemoveRow(row)}"/>
+        </ui:fragment>
+    </p:column>
+</p:dataTable>
+<p:commandButton id="addPortBtn" value="Add port" immediate="true" partialSubmit="true"
+                 process="@this" update="@this portsTblId" disabled="#{viewPortsByProjectId.addServerBtnDisabled}"
+                 actionListener="#{viewPortsByProjectId.onAddPort()}"
+                 icon="ui-icon-plusthick" style="margin: 10px 10px 0 0"/>
+
+<p:commandButton id="saveBtn" value="Save"
+                 process="@this" update="portsTblId addPortBtn msgs"
+                 actionListener="#{viewPortsByProjectId.save()}"
+                 icon="ui-icon-check"/>
+</h:form>
+<p:messages id="msgs" showSummary="true" showDetail="true" escape="false"/>
+
+<p:separator rendered="#{not empty viewPortsByProjectId.selectedProject and not empty viewPortsByProjectId.rowsByBrokerId}"/>
+
+<ui:repeat value="#{viewPortsByProjectId.rowsByBrokerId.entrySet()}" var="entry"
+           rendered="#{not empty viewPortsByProjectId.selectedProject and not empty viewPortsByProjectId.rowsByBrokerId}">
+    <p:dataTable value="#{entry.value}" var="row" style="margin-top:10px;"
+                 reflow="true">
+        <f:facet name="header">
+            #{entry.value.size()} ports |
+            Other broker: #{brokerHolder.availableBrokers.get(entry.key).name}[#{entry.key}]
+        </f:facet>
+
+        <p:column headerText="Port" width="50">
+            <h:outputText value="#{row.pojo.value}"/>
+        </p:column>
+
+        <p:column headerText="Game" width="350">
+            <h:outputText value="#{viewPortsByProjectId.gameByAppId.get(row.pojo.gameAppId).name}[#{row.pojo.gameAppId}]"/>
+        </p:column>
+
+        <p:column headerText="Name" width="400">
+            <h:outputText value="#{row.pojo.name}[#{row.pojo.id}]"/>
+        </p:column>
+
+        <p:column headerText="Active" width="60">
+            <h:outputText value="#{row.pojo.active ? 'Yes' : 'No'}" rendered="#{not empty row.pojo.active}"/>
+        </p:column>
+
+        <p:column headerText="FFA" width="60">
+            <h:outputText value="#{row.pojo.ffa ? 'Yes' : 'No'}" rendered="#{not empty row.pojo.ffa}"/>
+        </p:column>
+
+        <p:column headerText="Ignore bots" width="60">
+            <h:outputText value="#{row.pojo.ignoreBots ? 'Yes' : 'No'}" rendered="#{not empty row.pojo.ignoreBots}"/>
+        </p:column>
+
+        <p:column headerText="Start session on action" width="60">
+            <h:outputText value="#{row.pojo.startSessionOnAction ? 'Yes' : 'No'}" rendered="#{not empty row.pojo.startSessionOnAction}"/>
+        </p:column>
+    </p:dataTable>
+</ui:repeat>
+</p:panel>
+<p:blockUI widgetVar="buiPorts" block="edPortsPanel"
+trigger="edPortsForm:flushSessionsBtn edPortsForm:applyChangesBtn edPortsForm:addPortBtn edPortsForm:saveBtn edPortsForm:portsTblId"/>
+</ui:fragment>
+</ui:define>
+</ui:composition>
+</html>
