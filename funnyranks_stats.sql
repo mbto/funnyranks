@@ -378,7 +378,7 @@ CREATE TABLE `rank` (
 LOCK TABLES `rank` WRITE;
 /*!40000 ALTER TABLE `rank` DISABLE KEYS */;
 set autocommit=0;
-INSERT INTO `rank` VALUES (1,1,'¯\\_(ツ)_/¯','Сынок','Son'),(2,2,'¯\\_(ツ)_/¯','Тюфяк','Mattress'),(3,3,'¯\\_(ツ)_/¯','Овощ','Vegetable'),(4,4,'¯\\_(ツ)_/¯','Кабан','Boar'),(5,5,'ˁ°ᴥ°ˀ','Силач','Strongman'),(6,6,'ˁ°ᴥ°ˀ','Шароеб','Spray shooter'),(7,7,'ˁ°ᴥ°ˀ','Пацан','Kid'),(8,8,'ˁ°ᴥ°ˀ','Смертник','Bomber'),(9,9,'(°‿°)','Везунчик','Lucky'),(10,10,'(°‿°)','Жульбан','Zhulban'),(11,11,'(°‿°)','Гопник','Chav'),(12,12,'(°‿°)','Кэмпер','Camper'),(13,13,'ᕙ(°ʖ°)ᕗ','Помощник','Assistant'),(14,14,'ᕙ(°ʖ°)ᕗ','Вуйко','Vuiko'),(15,15,'ᕙ(°ʖ°)ᕗ','Донышко','Bottom'),(16,16,'ᕙ(°ʖ°)ᕗ','Профан','Profane'),(17,17,'ᕦ(°_°)ᕤ','Титушка','Titushka'),(18,18,'ᕦ(°_°)ᕤ','Боцман','Boatswain'),(19,19,'ᕦ(°_°)ᕤ','Школьник','Schoolboy'),(20,20,'ᕦ(°_°)ᕤ','Мусор','Rubbish'),(21,21,'龴ↀ‿ↀ龴','Отбой','Hang up'),(22,22,'龴ↀ‿ↀ龴','ПТУ-шник','Vocational school'),(23,23,'龴ↀ‿ↀ龴','Зек','Snakes'),(24,24,'龴ↀ‿ↀ龴','Бывалый','Experienced'),(25,25,'(ಥ﹏ಥ)','Прораб','Foreman'),(26,26,'(ಥ﹏ಥ)','Жестянщик','Tinsmith'),(27,27,'(ಥ﹏ಥ)','Пахан','Pahan'),(28,28,'(ಥ﹏ಥ)','Директор','Director'),(29,29,'(ง°ل͜°)ง','Гастролер','Guest performer'),(30,30,'(ง°ل͜°)ง','Мордоворот','Mordovorot'),(31,31,'(ง°ل͜°)ง','Геймер','Gamer'),(32,32,'(ง°ل͜°)ง','Отважный','Brave'),(33,33,'(づ° ³°)づ','Убийца','Killer'),(34,34,'(づ° ³°)づ','Халявщик','Freeloader'),(35,35,'(づ° ³°)づ','Псих','Crazy'),(36,36,'(づ° ³°)づ','Йовбак','Yowback'),(37,37,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Громила','Brute'),(38,38,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Мужик','Man'),(39,39,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Дезертир','Deserter'),(40,40,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Боец','Fighter'),(41,41,'( ° ͜ʖ °)','Софт','Cheater'),(42,42,'( ° ͜ʖ °)','Громила-здоровяк','Big brute'),(43,43,'( ° ͜ʖ °)','Партизан','Partisan'),(44,44,'( ° ͜ʖ °)','Сенсей','Sensei'),(45,45,'t(ಠ益ಠt)','Рыцарь','Knight'),(46,46,'t(ಠ益ಠt)','Спецназовец','Spetsnaz'),(47,47,'t(ಠ益ಠt)','Тащит всю команду','Drags the whole team'),(48,48,'t(ಠ益ಠt)','Олдфаг','Oldfag'),(49,49,'(ノಠ益ಠ)ノ彡','Каратель','The Punisher'),(50,50,'(ノಠ益ಠ)ノ彡','Здоровяк','Big man'),(51,51,'(ノಠ益ಠ)ノ彡','Аим','Aim'),(52,52,'(ノಠ益ಠ)ノ彡','Фраер','Fraer'),(53,53,'ლ(ಠ益ಠლ)','Штурмовой','Assault'),(54,54,'ლ(ಠ益ಠლ)','Boss','Boss'),(55,55,'（︶︿︶）','Super Old School','Super Old School'),(56,56,'（︶︿︶）','Непобедимый','Invincible');
+INSERT INTO `rank` VALUES (1,1,'¯\\_(ツ)_/¯','Сынок','Son'),(2,2,'¯\\_(ツ)_/¯','Тюфяк','Mattress'),(3,3,'¯\\_(ツ)_/¯','Овощ','Vegetable'),(4,4,'¯\\_(ツ)_/¯','Кабан','Boar'),(5,5,'ˁ°ᴥ°ˀ','Силач','Strongman'),(6,6,'ˁ°ᴥ°ˀ','Шароеб','Spray shooter'),(7,7,'ˁ°ᴥ°ˀ','Пацан','Kid'),(8,8,'ˁ°ᴥ°ˀ','Смертник','Bomber'),(9,9,'(°‿°)','Везунчик','Lucky'),(10,10,'(°‿°)','Жульбан','Rogue'),(11,11,'(°‿°)','Гопник','Chav'),(12,12,'(°‿°)','Кэмпер','Camper'),(13,13,'ᕙ(°ʖ°)ᕗ','Помощник','Assistant'),(14,14,'ᕙ(°ʖ°)ᕗ','Вуйко','Vuiko'),(15,15,'ᕙ(°ʖ°)ᕗ','Донышко','Bottom'),(16,16,'ᕙ(°ʖ°)ᕗ','Профан','Profane'),(17,17,'ᕦ(°_°)ᕤ','Титушка','Instigator'),(18,18,'ᕦ(°_°)ᕤ','Боцман','Boatswain'),(19,19,'ᕦ(°_°)ᕤ','Школьник','Schoolboy'),(20,20,'ᕦ(°_°)ᕤ','Мусор','Rubbish'),(21,21,'龴ↀ‿ↀ龴','Отбой','Hang up'),(22,22,'龴ↀ‿ↀ龴','ПТУ-шник','Vocational school'),(23,23,'龴ↀ‿ↀ龴','Зек','Snakes'),(24,24,'龴ↀ‿ↀ龴','Бывалый','Experienced'),(25,25,'(ಥ﹏ಥ)','Прораб','Foreman'),(26,26,'(ಥ﹏ಥ)','Жестянщик','Tinsmith'),(27,27,'(ಥ﹏ಥ)','Пахан','Head of the gang'),(28,28,'(ಥ﹏ಥ)','Директор','Director'),(29,29,'(ง°ل͜°)ง','Гастролер','Guest performer'),(30,30,'(ง°ل͜°)ง','Мордоворот','Jowly'),(31,31,'(ง°ل͜°)ง','Геймер','Gamer'),(32,32,'(ง°ل͜°)ง','Отважный','Brave'),(33,33,'(づ° ³°)づ','Убийца','Killer'),(34,34,'(づ° ³°)づ','Халявщик','Freeloader'),(35,35,'(づ° ³°)づ','Псих','Crazy'),(36,36,'(づ° ³°)づ','Йовбак','Mercenary'),(37,37,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Громила','Brute'),(38,38,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Мужик','Man'),(39,39,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Дезертир','Deserter'),(40,40,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Боец','Fighter'),(41,41,'( ° ͜ʖ °)','Софт','Cheater'),(42,42,'( ° ͜ʖ °)','Громила-здоровяк','Big brute'),(43,43,'( ° ͜ʖ °)','Партизан','Partisan'),(44,44,'( ° ͜ʖ °)','Сенсей','Sensei'),(45,45,'t(ಠ益ಠt)','Рыцарь','Knight'),(46,46,'t(ಠ益ಠt)','Спецназовец','Spetsnaz'),(47,47,'t(ಠ益ಠt)','Тащит всю команду','Drags the whole team'),(48,48,'t(ಠ益ಠt)','Олдфаг','Oldfag'),(49,49,'(ノಠ益ಠ)ノ彡','Каратель','The Punisher'),(50,50,'(ノಠ益ಠ)ノ彡','Здоровяк','Big man'),(51,51,'(ノಠ益ಠ)ノ彡','Аим','Aim'),(52,52,'(ノಠ益ಠ)ノ彡','Фраер','Virgin'),(53,53,'ლ(ಠ益ಠლ)','Штурмовой','Assault'),(54,54,'ლ(ಠ益ಠლ)','Босс','Boss'),(55,55,'（︶︿︶）','Старая школа','Old School'),(56,56,'（︶︿︶）','Непобедимый','Invincible');
 /*!40000 ALTER TABLE `rank` ENABLE KEYS */;
 UNLOCK TABLES;
 commit;
@@ -507,6 +507,29 @@ BEGIN
 	
 -- 	return concat(repeat("★", black_stars), repeat("☆", white_stars)); // HLDS 90 not supported stars characters in hud/chat
 	return concat(repeat("彡", black_stars), repeat("ノ", white_stars));
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `build_stars2` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` FUNCTION `build_stars2`(level int unsigned, ranks_total int unsigned) RETURNS varchar(6) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
+    DETERMINISTIC
+BEGIN
+	declare black_stars int unsigned default greatest(1, truncate(level * 6 / ranks_total, 0));
+	declare white_stars int unsigned default 6 - black_stars;
+	
+ 	return concat(repeat("★", black_stars), repeat("☆", white_stars));
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -711,6 +734,45 @@ where `player_steamid`.`steamid64` = steamId64
 order by `player_steamid`.`reg_datetime` desc
 limit 1
 ;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `Top` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `Top`(rows_count int unsigned, lang varchar(5))
+BEGIN
+with cte as (select player.id, 
+		player.rank_id,
+		player.time_secs 
+	from player 
+	order by player.`rank_id` desc, player.time_secs desc 
+	limit rows_count),
+cte2 as (select 
+		distinct player_name.player_id,
+		first_value(player_name.name) over(w order by player_name.reg_datetime desc, player_name.id desc) name
+	from player_name join cte on cte.id = player_name.player_id
+	window w as (partition by player_name.player_id))
+select 
+	cte2.name, 
+	`build_human_time`(`cte`.`time_secs`, lang) AS `gaming_time`,
+	(CASE WHEN lang = 'ru' THEN `rank`.`name_ru`
+		  ELSE `rank`.`name_en`
+    END) AS `rank_name`,
+  `build_stars2`(`rank`.`level`, (select count(*) from `rank`)) AS `stars`,
+	`rank`.`kaomoji` as kaomoji
+from cte join cte2 on cte.id = cte2.player_id
+join `rank` on `rank`.id = cte.rank_id;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
