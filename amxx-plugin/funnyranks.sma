@@ -22,6 +22,9 @@ public plugin_init() {
 	mergeTypeCvar = register_cvar("funnyranks_merge_type", "1") // 1 - nick, 2 - IP, 3 - SteamID
 	languageCvar = register_cvar("funnyranks_language", "en") // supports only 'en' and 'ru'
 
+	register_clcmd("say /top10", "showTop", ADMIN_ALL, "Shows top players")
+	register_clcmd("say /top15", "showTop", ADMIN_ALL, "Shows top players")
+
 	hudMsgId = CreateHudSyncObj()
 }
 
@@ -52,10 +55,11 @@ public plugin_end() {
 	}
 }
 
-enum PlayerDataEnum {
+enum _:PlayerDataEnum {
 	session,
 	bool:hasData,
 	playerName[32],
+	gamingTime[64],
 	rankName[61 * 4], // utf8mb4
 	stars[7 * 4], // utf8mb4
 	kaomoji[61 * 4] // utf8mb4
@@ -66,9 +70,95 @@ public clearPlayerData(id) {
 	playerData[id][session] = 0;
 	playerData[id][hasData] = false;
 	playerData[id][playerName][0] = EOS;
+	playerData[id][gamingTime][0] = EOS;
 	playerData[id][rankName][0] = EOS;
 	playerData[id][stars][0] = EOS;
 	playerData[id][kaomoji][0] = EOS;
+}
+
+public showTop(id, level, cid) {
+	if(sqlHandler == Empty_Handle) {
+		client_print(id, print_chat, "[Funnyranks]: Top players not available");
+		return PLUGIN_CONTINUE;
+	}
+
+	new language[6], sqlQuery[256]
+	get_pcvar_string(languageCvar, language, charsmax(language));
+	formatex(sqlQuery, charsmax(sqlQuery), "call Top('10', '%s')", language)
+	new data[2]
+	data[0] = id
+	data[1] = playerData[id][session] = random(0)
+	SQL_ThreadQuery(sqlHandler, "onTopComing", sqlQuery, data, sizeof data)
+	return PLUGIN_CONTINUE
+}
+
+public onTopComing(queryState, Handle:handler, const err[], errid, data[], data_len, Float:queuetime) {
+	new id = data[0]
+	if(data[1] != playerData[id][session]) {
+		#if defined DEBUG
+		log_amx("onTopComing invalid session");
+		#endif
+		SQL_FreeHandle(handler)
+		return
+	}
+	new Array:topDataArray = ArrayCreate(PlayerDataEnum);
+	if(queryState == TQUERY_SUCCESS) {
+		if(!SQL_NumResults(handler)) {
+			#if defined DEBUG
+			log_amx("onTopComing no result");
+			#endif
+			SQL_FreeHandle(handler)
+			client_print(id, print_chat, "[Funnyranks]: Players statistics not exists");
+			return;
+		}
+		#if defined DEBUG
+		log_amx("onTopComing has result");
+		#endif
+		while(SQL_MoreResults(handler)) {
+			new topData[PlayerDataEnum]
+// name	gaming_time			rank_name	stars			kaomoji
+// Wolf	4мес 8дн 14ч 25м	Босс		彡彡彡彡彡ノ	ლ(ಠ益ಠლ)
+			SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "name"), topData[playerName], charsmax(topData[playerName]))
+			SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "gaming_time"), topData[gamingTime], charsmax(topData[gamingTime]))
+			SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "rank_name"), topData[rankName], charsmax(topData[rankName]))
+			SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "stars"), topData[stars], charsmax(topData[stars]))
+			SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "kaomoji"), topData[kaomoji], charsmax(topData[kaomoji]))
+			ArrayPushArray(topDataArray, topData)
+			#if defined DEBUG
+			log_amx("onTopComing playerName %s gamingTime %s rankName %s stars %s kaomoji %s", 
+				topData[playerName],
+				topData[gamingTime],
+				topData[rankName], 
+				topData[stars], 
+				topData[kaomoji]);
+			#endif
+			SQL_NextRow(handler);
+		}
+	} else if(errid || queryState == TQUERY_CONNECT_FAILED || queryState == TQUERY_QUERY_FAILED) {
+		logFailedQuery(queryState, handler, err, errid, queuetime)
+	}
+	#if defined DEBUG
+	log_amx("onTopComing queryState %d", queryState)
+	#endif
+	SQL_FreeHandle(handler)
+	new html[2048]
+	new len = formatex(html, charsmax(html), "<html><head><meta http-equiv='content-type' content='text/html;charset=utf-8'/>")
+	len += formatex(html[len], charsmax(html) - len, "<body bgcolor=#000000 style=^"color:#FFB000;font-family:courier new^">")
+	len += formatex(html[len], charsmax(html) - len, "<table><tr><th>#</th><th width=30%%>Nick</th><th width=20%%>Rank</th><th width=17%%>Skill</th><th>Gaming time</th></tr>")
+	for(new i=0,size=ArraySize(topDataArray);i<size && charsmax(html) - len > 0;i++) {
+		new topData[PlayerDataEnum]
+		ArrayGetArray(topDataArray, i, topData)
+		replace_string(topData[playerName], charsmax(topData[playerName]), "<", "&lt;")
+		// replace_string(t_sName, charsmax(t_sName), ">", "&gt;")
+		len += formatex(html[len], charsmax(html) - len, "<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>", 
+			i + 1, 
+			topData[playerName], 
+			topData[rankName],
+			topData[stars], 
+			topData[gamingTime])
+	}
+	ArrayDestroy(topDataArray)
+	show_motd(id, html, "Funnyranks top players")
 }
 
 public client_authorized(id, const authid[]) {
@@ -169,11 +259,16 @@ public onStatsComing(queryState, Handle:handler, const err[], errid, data[], dat
 		fetched = true;
 // id	kills	deaths	time_secs	rank_id	lastseen_datetime		last_server_name	gaming_time	rank_name	stars		kaomoji
 // 1	0		0		2040		1		2021-01-08 14:05:00		Public Server		34м			Сынок		彡ノノノノノ ¯\_(ツ)_/¯
-		SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "rank_name"), playerData[id][rankName], charsmax(playerData[][rankName])) // rank_name
-		SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "stars"), playerData[id][stars], charsmax(playerData[][stars])) // stars
-		SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "kaomoji"), playerData[id][kaomoji], charsmax(playerData[][kaomoji])) // kaomoji
+		SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "gaming_time"), playerData[id][gamingTime], charsmax(playerData[][gamingTime]))
+		SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "rank_name"), playerData[id][rankName], charsmax(playerData[][rankName]))
+		SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "stars"), playerData[id][stars], charsmax(playerData[][stars]))
+		SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "kaomoji"), playerData[id][kaomoji], charsmax(playerData[][kaomoji]))
 		#if defined DEBUG
-		log_amx("onStatsComing rankName %s stars %s kaomoji %s", playerData[id][rankName], playerData[id][stars], playerData[id][kaomoji]);
+		log_amx("onStatsComing gamingTime %s rankName %s stars %s kaomoji %s", 
+			playerData[id][gamingTime],
+			playerData[id][rankName], 
+			playerData[id][stars], 
+			playerData[id][kaomoji]);
 		#endif
 		playerData[id][hasData] = true;
 	} else if(errid || queryState == TQUERY_CONNECT_FAILED || queryState == TQUERY_QUERY_FAILED) {
