@@ -59,6 +59,8 @@ enum _:PlayerDataEnum {
 	session,
 	bool:hasData,
 	playerName[32],
+	kills,
+	deaths,
 	gamingTime[64],
 	rankName[61 * 4], // utf8mb4
 	stars[7 * 4], // utf8mb4
@@ -70,6 +72,8 @@ public clearPlayerData(id) {
 	playerData[id][session] = 0;
 	playerData[id][hasData] = false;
 	playerData[id][playerName][0] = EOS;
+	playerData[id][kills] = 0;
+	playerData[id][deaths] = 0;
 	playerData[id][gamingTime][0] = EOS;
 	playerData[id][rankName][0] = EOS;
 	playerData[id][stars][0] = EOS;
@@ -116,17 +120,21 @@ public onTopComing(queryState, Handle:handler, const err[], errid, data[], data_
 		#endif
 		while(SQL_MoreResults(handler)) {
 			new topData[PlayerDataEnum]
-// name	gaming_time			rank_name	stars			kaomoji
-// Wolf	4мес 8дн 14ч 25м	Босс		彡彡彡彡彡ノ	ლ(ಠ益ಠლ)
+// name					kills	deaths	gaming_time			rank_name	stars
+// 3ey1 qsxh jv4wmzm	9999	1010	8мес 13дн 14ч 3м	Сенсей		★★★★☆☆
 			SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "name"), topData[playerName], charsmax(topData[playerName]))
+			topData[kills] = SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "kills"))
+			topData[deaths] = SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "deaths"))
 			SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "gaming_time"), topData[gamingTime], charsmax(topData[gamingTime]))
 			SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "rank_name"), topData[rankName], charsmax(topData[rankName]))
 			SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "stars"), topData[stars], charsmax(topData[stars]))
-			SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "kaomoji"), topData[kaomoji], charsmax(topData[kaomoji]))
+			// SQL_ReadResult(handler, SQL_FieldNameToNum(handler, "kaomoji"), topData[kaomoji], charsmax(topData[kaomoji]))
 			ArrayPushArray(topDataArray, topData)
 			#if defined DEBUG
-			log_amx("onTopComing playerName %s gamingTime %s rankName %s stars %s kaomoji %s", 
+			log_amx("onTopComing playerName %s kills %d deaths %d gamingTime %s rankName %s stars %s kaomoji %s", 
 				topData[playerName],
+				topData[kills],
+				topData[deaths],
 				topData[gamingTime],
 				topData[rankName], 
 				topData[stars], 
@@ -144,15 +152,17 @@ public onTopComing(queryState, Handle:handler, const err[], errid, data[], data_
 	new html[2048]
 	new len = formatex(html, charsmax(html), "<html><head><meta http-equiv='content-type' content='text/html;charset=utf-8'/>")
 	len += formatex(html[len], charsmax(html) - len, "<body bgcolor=#000000 style=^"color:#FFB000;font-family:courier new^">")
-	len += formatex(html[len], charsmax(html) - len, "<table><tr><th>#</th><th width=30%%>Nick</th><th width=20%%>Rank</th><th width=17%%>Skill</th><th>Gaming time</th></tr>")
+	len += formatex(html[len], charsmax(html) - len, "<table><tr><th>#</th><th>Nick</th><th>Kills</th><th>Deaths</th><th>Rank</th><th>Skill</th><th>Gaming time</th></tr>")
 	for(new i=0,size=ArraySize(topDataArray);i<size && charsmax(html) - len > 0;i++) {
 		new topData[PlayerDataEnum]
 		ArrayGetArray(topDataArray, i, topData)
 		replace_string(topData[playerName], charsmax(topData[playerName]), "<", "&lt;")
 		// replace_string(t_sName, charsmax(t_sName), ">", "&gt;")
-		len += formatex(html[len], charsmax(html) - len, "<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>", 
+		len += formatex(html[len], charsmax(html) - len, "<tr><td>%d</td><td>%s</td><td>%d</td><td>%d</td><td>%s</td><td>%s</td><td>%s</td></tr>", 
 			i + 1, 
 			topData[playerName], 
+			topData[kills], 
+			topData[deaths], 
 			topData[rankName],
 			topData[stars], 
 			topData[gamingTime])
