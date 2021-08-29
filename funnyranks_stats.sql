@@ -753,8 +753,10 @@ DELIMITER ;;
 CREATE DEFINER=`root`@`%` PROCEDURE `Top`(rows_count int unsigned, lang varchar(5))
 BEGIN
 with cte as (select player.id, 
+		player.kills,
+		player.deaths,
 		player.rank_id,
-		player.time_secs 
+		player.time_secs
 	from player 
 	order by player.`rank_id` desc, player.time_secs desc 
 	limit rows_count),
@@ -765,6 +767,8 @@ cte2 as (select
 	window w as (partition by player_name.player_id))
 select 
 	cte2.name, 
+	cte.kills,
+	cte.deaths,
 	`build_human_time`(`cte`.`time_secs`, lang) AS `gaming_time`,
 	(CASE WHEN lang = 'ru' THEN `rank`.`name_ru`
 		  ELSE `rank`.`name_en`
