@@ -6,6 +6,7 @@ package com.github.mbto.funnyranks.common.model.funnyranks_stats;
 
 import com.github.mbto.funnyranks.common.model.funnyranks_stats.routines.BuildHumanTime;
 import com.github.mbto.funnyranks.common.model.funnyranks_stats.routines.BuildStars;
+import com.github.mbto.funnyranks.common.model.funnyranks_stats.routines.BuildStars2;
 import com.github.mbto.funnyranks.common.model.funnyranks_stats.routines.CalculateRankId;
 import com.github.mbto.funnyranks.common.model.funnyranks_stats.routines.CalculateSkill;
 import com.github.mbto.funnyranks.common.model.funnyranks_stats.routines.Declension;
@@ -13,6 +14,7 @@ import com.github.mbto.funnyranks.common.model.funnyranks_stats.routines.Playerb
 import com.github.mbto.funnyranks.common.model.funnyranks_stats.routines.Playerbyname;
 import com.github.mbto.funnyranks.common.model.funnyranks_stats.routines.Playerbysteamid2;
 import com.github.mbto.funnyranks.common.model.funnyranks_stats.routines.Playerbysteamid64;
+import com.github.mbto.funnyranks.common.model.funnyranks_stats.routines.Top;
 
 import org.jooq.Configuration;
 import org.jooq.Field;
@@ -87,6 +89,40 @@ public class Routines {
      */
     public static Field<String> buildStars(Field<UInteger> level, Field<UInteger> ranksTotal) {
         BuildStars f = new BuildStars();
+        f.setLevel(level);
+        f.setRanksTotal(ranksTotal);
+
+        return f.asField();
+    }
+
+    /**
+     * Call <code>funnyranks_stats.build_stars2</code>
+     */
+    public static String buildStars2(Configuration configuration, UInteger level, UInteger ranksTotal) {
+        BuildStars2 f = new BuildStars2();
+        f.setLevel(level);
+        f.setRanksTotal(ranksTotal);
+
+        f.execute(configuration);
+        return f.getReturnValue();
+    }
+
+    /**
+     * Get <code>funnyranks_stats.build_stars2</code> as a field.
+     */
+    public static Field<String> buildStars2(UInteger level, UInteger ranksTotal) {
+        BuildStars2 f = new BuildStars2();
+        f.setLevel(level);
+        f.setRanksTotal(ranksTotal);
+
+        return f.asField();
+    }
+
+    /**
+     * Get <code>funnyranks_stats.build_stars2</code> as a field.
+     */
+    public static Field<String> buildStars2(Field<UInteger> level, Field<UInteger> ranksTotal) {
+        BuildStars2 f = new BuildStars2();
         f.setLevel(level);
         f.setRanksTotal(ranksTotal);
 
@@ -247,6 +283,17 @@ public class Routines {
         Playerbysteamid64 p = new Playerbysteamid64();
         p.setSteamid64(steamid64);
         p.setRanksTotal(ranksTotal);
+        p.setLang(lang);
+
+        p.execute(configuration);
+    }
+
+    /**
+     * Call <code>funnyranks_stats.Top</code>
+     */
+    public static void top(Configuration configuration, UInteger rowsCount, String lang) {
+        Top p = new Top();
+        p.setRowsCount(rowsCount);
         p.setLang(lang);
 
         p.execute(configuration);
