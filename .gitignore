@@ -5,15 +5,12 @@ out
 build/
 out/
 *.iml
-/system/common/src/main/java/com/github/mbto/funnyranks/common/model/funnyranks_stats/routines/BuildHumanTime.java
-/system/common/src/main/java/com/github/mbto/funnyranks/common/model/funnyranks_stats/routines/BuildStars.java
-/system/common/src/main/java/com/github/mbto/funnyranks/common/model/funnyranks_stats/routines/CalculateRankId.java
-/system/common/src/main/java/com/github/mbto/funnyranks/common/model/funnyranks_stats/routines/CalculateSkill.java
-/system/common/src/main/java/com/github/mbto/funnyranks/common/model/funnyranks_stats/routines/Declension.java
 /01. Install on game hosting.txt
 /02. Manage broker.txt
 /03. Install on new HLDS project.txt
 /11. Example select player.txt
 /100. Questions.txt
-/funnyranks Диаграмма.drawio
-/funnyranks Диаграмма.png
+/funnyranks diagram.drawio
+/funnyranks diagram.png
+/links_for_test.txt
+/broker dev schema.jpg
