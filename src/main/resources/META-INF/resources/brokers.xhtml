@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<f:metadata>
+    <f:viewAction action="#{requestBrokers.fetch()}" onPostback="false" immediate="true"/>
+</f:metadata>
+
+<ui:composition template="../template/layout.xhtml">
+<ui:define name="title">Brokers</ui:define>
+<ui:define name="head">
+<style type="text/css">
+.currentBroker {
+    background-color: #d7ffd7 !important;
+    background-image: none !important;
+    color: #000000 !important;
+}
+</style>
+</ui:define>
+<ui:define name="center">
+<h:form id="showBrokersForm">
+    <p:button value="New broker" href="/newBroker" style="margin-bottom:10px;" icon="ui-icon-arrowthick-1-e"/>
+
+    <p:dataTable id="brokersTblId" value="#{requestBrokers.brokers}" var="broker" emptyMessage="No brokers found"
+                 selectionMode="single" rowKey="#{broker.id}"
+                 reflow="true" style="max-width:1200px;"
+                 rowStyleClass="#{broker.id == brokerHolder.currentBrokerId ? 'currentBroker' : null}">
+        <f:facet name="header">Brokers</f:facet>
+        <p:ajax event="rowSelect" immediate="true" process="@this" update="@none" />
+        <p:column headerText="Reg date" width="45">
+            <h:outputText value="#{broker.regDatetime}">
+                <f:convertDateTime pattern="yyyy-MM-dd HH:mm:ss" type="localDateTime"/>
+            </h:outputText>
+        </p:column>
+        <p:column headerText="Name" width="26">
+            <h:outputText value="#{broker.name}[#{broker.id}]" />
+        </p:column>
+        <p:column headerText="Description" width="26">
+            <h:outputText value="#{broker.description}" />
+        </p:column>
+        <p:column headerText="Ports" width="3">
+            <h:outputText value="#{requestBrokers.portsAtAllBrokers.get(broker.id)}" />
+        </p:column>
+    </p:dataTable>
+</h:form>
+</ui:define>
+</ui:composition>
+</html>

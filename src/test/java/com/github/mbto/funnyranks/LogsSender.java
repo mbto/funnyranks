@@ -15,7 +15,6 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -34,7 +33,7 @@ public class LogsSender {
              BufferedReader br = new BufferedReader(new InputStreamReader(resourceAsStream))) {
             logs = br.lines()
                     .filter(StringUtils::isNotBlank)
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         String ip = "127.0.0.1";
@@ -68,7 +67,7 @@ public class LogsSender {
                             Thread.sleep(current().nextInt(1, 15));
                         }
                     } catch (Throwable e) {
-                        throw new RuntimeException(e);
+                        throw new RuntimeException("port=" + port, e);
                     }
                 })).<CompletableFuture<Void>>toArray(CompletableFuture[]::new);
 

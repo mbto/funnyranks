@@ -4,7 +4,7 @@ import com.github.mbto.funnyranks.common.dto.Message;
 import com.github.mbto.funnyranks.common.dto.Partition;
 import com.github.mbto.funnyranks.common.dto.PortData;
 import com.github.mbto.funnyranks.common.dto.session.Storage;
-import com.github.mbto.funnyranks.handlers.MessageHandler;
+import com.github.mbto.funnyranks.broker.handlers.MessageHandler;
 import org.jooq.types.UInteger;
 import org.jooq.types.UShort;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,7 +14,6 @@ import org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration;
 import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration;
-import org.springframework.boot.web.servlet.ServletContextInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -23,26 +22,30 @@ import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.net.DatagramSocket;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
 
-@SpringBootApplication(exclude = {JooqAutoConfiguration.class,
-        TaskExecutionAutoConfiguration.class, TaskSchedulingAutoConfiguration.class,
-        UserDetailsServiceAutoConfiguration.class})
+@SpringBootApplication(exclude = {
+    JooqAutoConfiguration.class,
+    TaskExecutionAutoConfiguration.class,
+    TaskSchedulingAutoConfiguration.class,
+    UserDetailsServiceAutoConfiguration.class
+})
 @EnableAsync(proxyTargetClass = true)
 @EnableScheduling
 public class Application implements SchedulingConfigurer {
     static {
-        System.getProperties().setProperty("org.jooq.no-logo", "true");
+        Properties properties = System.getProperties();
+        properties.setProperty("org.jooq.no-logo", "true");
+        properties.setProperty("org.jooq.no-tips", "true");
     }
 
     public static void main(String[] args) {
@@ -132,7 +135,6 @@ public class Application implements SchedulingConfigurer {
         scheduler.setThreadGroupName("schedulers");
         scheduler.setThreadNamePrefix("scheduler-");
         scheduler.setDaemon(false);
-//        scheduler.setAllowCoreThreadTimeOut()
         scheduler.setWaitForTasksToCompleteOnShutdown(true);
         scheduler.setAwaitTerminationSeconds(120);
         scheduler.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
@@ -244,36 +246,4 @@ public class Application implements SchedulingConfigurer {
 //            builder.serializers(new LocalDateTimeSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 //        };
 //    }
-    @Bean
-    public ServletContextInitializer withParamsContextInitializer() {
-        return servletContext -> {
-//            servletContext.setInitParameter("javax.faces.DEFAULT_SUFFIX", ".xhtml");
-            servletContext.setInitParameter("javax.faces.FACELETS_VIEW_MAPPINGS", "*.xhtml");
-            servletContext.setInitParameter("javax.faces.PROJECT_STAGE", "Production");
-//        servletContext.setInitParameter("javax.faces.PROJECT_STAGE", "Development");
-            servletContext.setInitParameter("javax.faces.FACELETS_SKIP_COMMENTS", "true");
-            servletContext.setInitParameter("javax.faces.DATETIMECONVERTER_DEFAULT_TIMEZONE_IS_SYSTEM_TIMEZONE", "true");
-            servletContext.setInitParameter("javax.faces.FACELETS_BUFFER_SIZE", "65535");
-
-            // Bug in ELResolver https://stackoverflow.com/questions/19575283/jsf-2-2-interpret-empty-string-submitted-values-as-null-not-working
-            // solutions don't work =/
-            servletContext.setInitParameter("javax.faces.INTERPRET_EMPTY_STRING_SUBMITTED_VALUES_AS_NULL", "true");
-
-            servletContext.setInitParameter("com.sun.faces.enableRestoreView11Compatibility", "true");
-            servletContext.setInitParameter("com.sun.faces.forceLoadConfiguration", "true");
-
-            servletContext.setInitParameter("primefaces.THEME", "glass-x");
-            servletContext.setInitParameter("primefaces.SUBMIT", "partial");
-            servletContext.setInitParameter("primefaces.TRANSFORM_METADATA", "true");
-//            servletContext.setInitParameter("primefaces.FONT_AWESOME", "true");
-            servletContext.setInitParameter("primefaces.UPLOADER", "native");
-
-//            servletContext.setInitParameter("org.omnifaces.FACES_VIEWS_SCAN_PATHS", "/*.xhtml/*");
-        };
-    }
-
-    @Bean
-    public PasswordEncoder bcryptPasswordEncoder() {
-        return new BCryptPasswordEncoder(10);
-    }
 }

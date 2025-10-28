@@ -1,0 +1,77 @@
+L 10/28/2025 - 20:43:40: Started map "de_forge" (CRC "1713631582")
+L 10/28/2025 - 20:43:41: World triggered "Round_Start"
+Dropped z3nith_ from server
+Reason:  Client sent 'drop'
+31.31.31.31:27005:reconnect
+L 10/28/2025 - 20:43:45: [REUNION]: RevEmu raw auth string: '12512512' (VolumeID)
+L 10/28/2025 - 20:43:45: [REUNION]: RevEmu auth key: '4534534534' steamid: 1231231231
+L 10/28/2025 - 20:43:45: [REUNION]: z3nith_ (31.31.31.31:27005) authorized as RevEmu
+L 10/28/2025 - 20:43:45: "z3nith_<56><STEAM_0:0:545454545><>" connected, address "31.31.31.31:27005"
+L 10/28/2025 - 20:43:53: "z3nith_<56><STEAM_0:0:545454545><>" entered the game
+L 10/28/2025 - 20:44:22: "z3nith_<56><STEAM_0:0:545454545><>" joined team "TERRORIST"
+L 10/28/2025 - 20:45:16: [REUNION]: RevEmu raw auth string: 'ZZZZZZZZZZZZZZZ' (HDDSN)
+L 10/28/2025 - 20:45:16: [REUNION]: RevEmu auth key: 'ZZZZZZZZZZZZZZZ' steamid: 7777777777
+L 10/28/2025 - 20:45:16: [REUNION]: Dillon Latham (41.41.41.41:50290) authorized as RevEmu
+L 10/28/2025 - 20:45:16: "Dillon Latham<57><STEAM_0:1:456456456><>" connected, address "41.41.41.41:50290"
+L 10/28/2025 - 20:45:30: Kick: "Dillon Latham<57><STEAM_0:1:456456456><>" was kicked by "Console" (message "Error! Idle Timeout (2).")
+Dropped Dillon Latham from server
+Reason:  Kicked :Error! Idle Timeout (2).
+L 10/28/2025 - 20:45:42: [REUNION]: RevEmu raw auth string: '9879879799' (VolumeID)
+L 10/28/2025 - 20:45:42: [REUNION]: RevEmu auth key: '4534534534' steamid: 2262685654
+L 10/28/2025 - 20:45:42: [REUNION]: nbfs '' (51.51.51.51:29565) authorized as RevEmu
+L 10/28/2025 - 20:45:42: "nbfs ''<58><STEAM_0:0:543543543><>" connected, address "51.51.51.51:29565"
+L 10/28/2025 - 20:45:42: Kick: "nbfs ''<58><STEAM_0:0:543543543><>" was kicked by "Console" (message "test message")
+Dropped nbfs '' from server
+Reason:  Kicked :test message
+L 10/28/2025 - 20:46:44: [REUNION]: RevEmu raw auth string: '9879879799' (VolumeID)
+L 10/28/2025 - 20:46:44: [REUNION]: RevEmu auth key: '4534534534' steamid: 2262685654
+L 10/28/2025 - 20:46:44: [REUNION]: nbfs '' (51.51.51.51:56543) authorized as RevEmu
+L 10/28/2025 - 20:46:44: "nbfs ''<59><STEAM_0:0:543543543><>" connected, address "51.51.51.51:56543"
+L 10/28/2025 - 20:46:45: Kick: "nbfs ''<59><STEAM_0:0:543543543><>" was kicked by "Console" (message "test message")
+Dropped nbfs '' from server
+Reason:  Kicked :test message
+L 10/28/2025 - 20:46:52: [REUNION]: RevEmu raw auth string: 'ZZZZZZZZZZZZZZZ' (HDDSN)
+L 10/28/2025 - 20:46:52: [REUNION]: RevEmu auth key: 'ZZZZZZZZZZZZZZZ' steamid: 7777777777
+L 10/28/2025 - 20:46:52: [REUNION]: Dillon Latham (41.41.41.41:38351) authorized as RevEmu
+L 10/28/2025 - 20:46:52: "Dillon Latham<60><STEAM_0:1:456456456><>" connected, address "41.41.41.41:38351"
+L 10/28/2025 - 20:46:52: Kick: "Dillon Latham<60><STEAM_0:1:456456456><>" was kicked by "Console" (message "test message")
+Dropped Dillon Latham from server
+Reason:  Kicked :test message
+L 10/28/2025 - 20:48:26: "z3nith_<56><STEAM_0:0:545454545><TERRORIST>" disconnected
+Dropped z3nith_ from server
+Reason:  Client sent 'drop'
+L 10/28/2025 - 21:03:38: Team "CT" scored "0" with "0" players
+L 10/28/2025 - 21:03:38: Team "TERRORIST" scored "0" with "0" players
+L 10/28/2025 - 21:03:42: [META] dll: Rebuilding callbacks...
+L 10/28/2025 - 21:03:42: [META] dll: Callbacks rebuilded.
+L 10/28/2025 - 21:03:42: Loading map "cs_italy"
+L 10/28/2025 - 21:03:42: Server cvars start
+L 10/28/2025 - 21:03:42: -------- Mapchange to cs_italy --------
+[ReAuthCheck] Success: Configuration executed.
+L 10/28/2025 - 21:03:43: Started map "cs_italy" (CRC "111715122")
+L 10/28/2025 - 22:08:48: "6yJIo4ka<48><STEAM_0:1:787878786><>" connected, address "31.31.25.25:1060"
+Dropped 6yJIo4ka from server
+Reason:  Client sent 'drop'
+31.31.25.25:1060:reconnect
+L 10/28/2025 - 22:08:55: [REUNION]: RevEmu raw auth string: '3241241237' (VolumeID)
+L 10/28/2025 - 22:08:55: [REUNION]: RevEmu auth key: '5235235234' steamid: 2168942414
+L 10/28/2025 - 22:08:55: [REUNION]: 6yJIo4ka (31.31.25.25:1060) authorized as RevEmu
+L 10/28/2025 - 22:08:55: "6yJIo4ka<49><STEAM_0:1:787878786><>" connected, address "31.31.25.25:1060"
+Dropped 6yJIo4ka from server
+Reason:  Timed out
+31.31.25.25:1060:reconnect
+L 10/28/2025 - 22:10:44: [REUNION]: RevEmu raw auth string: '3241241237' (VolumeID)
+L 10/28/2025 - 22:10:44: [REUNION]: RevEmu auth key: '5235235234' steamid: 2168942414
+L 10/28/2025 - 22:10:44: [REUNION]: 6yJIo4ka (31.31.25.25:1060) authorized as RevEmu
+L 10/28/2025 - 22:10:44: "6yJIo4ka<50><STEAM_0:1:787878786><>" connected, address "31.31.25.25:1060"
+Dropped 6yJIo4ka from server
+Reason:  Timed out
+L 10/28/2025 - 23:03:38: Team "CT" scored "0" with "0" players
+L 10/28/2025 - 23:03:38: Team "TERRORIST" scored "0" with "0" players
+L 10/28/2025 - 23:03:42: [META] dll: Rebuilding callbacks...
+L 10/28/2025 - 23:03:42: [META] dll: Callbacks rebuilded.
+L 10/28/2025 - 23:03:42: Loading map "cs_italy"
+L 10/28/2025 - 23:03:42: Server cvars start
+L 10/28/2025 - 23:03:42: -------- Mapchange to cs_italy --------
+[ReAuthCheck] Success: Configuration executed.
+L 10/28/2025 - 23:03:43: Started map "cs_italy" (CRC "111715122")

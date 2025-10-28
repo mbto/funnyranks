@@ -1,5 +1,6 @@
 package com.github.mbto.funnyranks;
 
+import com.github.mbto.funnyranks.broker.Distributor;
 import com.github.mbto.funnyranks.common.dto.PortData;
 import com.github.mbto.funnyranks.common.dto.session.Storage;
 import com.github.mbto.funnyranks.common.utils.ProjectUtils;
@@ -9,15 +10,15 @@ import org.jooq.DSLContext;
 import org.jooq.Record2;
 import org.jooq.types.UInteger;
 import org.jooq.types.UShort;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * For manual testing in IntelliJ: add -PManualTestEnabled in Gradle tab "Run Configuration" -> "Arguments"
  */
 @SpringBootTest
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @ActiveProfiles("test")
 @DependsOn("distributorTE")
 @Slf4j
@@ -43,18 +44,18 @@ public class ManualTest {
     @Autowired
     private DSLContext funnyRanksDsl;
 
-    @BeforeClass
-    public static void beforeClass() {
+    @BeforeAll
+    public static void beforeAll() {
         System.getProperties().setProperty("org.jooq.no-logo", "true");
     }
 
-    @AfterClass
-    public static void afterClass() {
+    @AfterAll
+    public static void afterAll() {
     }
 
     @Test
     public void testApplyChanges() throws Throwable {
-        distributor.applyChanges(null, false);
+        distributor.applyChanges(null);
         Thread.sleep(TimeUnit.SECONDS.toMillis(5));
     }
 

@@ -1,0 +1,56 @@
+-- distribution scripts:
+funnyranks to
+	funnyranks_autotest
+funnyranks_stats to
+	funnyranks_stats_autotest
+	funnyranks_stats_autotest2
+	funnyranks_stats_csdmru
+	funnyranks_stats_sandbox
+
+-- compare before drop:
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u root --password=root --databases funnyranks --add-drop-trigger --events --routines --single-transaction --no-autocommit | sed 's/ AUTO_INCREMENT=[0-9]*//g' > "C:\temp\sql-compare\funnyranks.sql"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u root --password=root --databases funnyranks_autotest --add-drop-trigger --events --routines --single-transaction --no-autocommit | sed 's/ AUTO_INCREMENT=[0-9]*//g' > "C:\temp\sql-compare\funnyranks_autotest.sql"
+
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u root --password=root --databases funnyranks_stats --add-drop-trigger --events --routines --single-transaction --no-autocommit | sed 's/ AUTO_INCREMENT=[0-9]*//g' > "C:\temp\sql-compare\funnyranks_stats.sql"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u root --password=root --databases funnyranks_stats_autotest --add-drop-trigger --events --routines --single-transaction --no-autocommit | sed 's/ AUTO_INCREMENT=[0-9]*//g' > "C:\temp\sql-compare\funnyranks_stats_autotest.sql"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u root --password=root --databases funnyranks_stats_autotest2 --add-drop-trigger --events --routines --single-transaction --no-autocommit | sed 's/ AUTO_INCREMENT=[0-9]*//g' > "C:\temp\sql-compare\funnyranks_stats_autotest2.sql"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u root --password=root --databases funnyranks_stats_csdmru --add-drop-trigger --events --routines --single-transaction --no-autocommit | sed 's/ AUTO_INCREMENT=[0-9]*//g' > "C:\temp\sql-compare\funnyranks_stats_csdmru.sql"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u root --password=root --databases funnyranks_stats_sandbox --add-drop-trigger --events --routines --single-transaction --no-autocommit | sed 's/ AUTO_INCREMENT=[0-9]*//g' > "C:\temp\sql-compare\funnyranks_stats_sandbox.sql"
+
+SET FOREIGN_KEY_CHECKS=0;
+truncate table funnyranks.`port`;
+truncate table funnyranks.project;
+truncate table funnyranks_stats.history;
+truncate table funnyranks_stats.player;
+truncate table funnyranks_stats.player_ip;
+truncate table funnyranks_stats.player_name;
+truncate table funnyranks_stats.player_steamid;
+SET FOREIGN_KEY_CHECKS=1;
+
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u root --password=root --no-create-db --add-drop-trigger --events --routines --single-transaction --no-autocommit funnyranks | sed 's/ AUTO_INCREMENT=[0-9]*//g' > "C:\Users\user\IdeaProjects\funnyranks\funnyranks.sql"
+
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u root --password=root --no-create-db --add-drop-trigger --events --routines --single-transaction --no-autocommit funnyranks_stats | sed 's/ AUTO_INCREMENT=[0-9]*//g' > "C:\Users\user\IdeaProjects\funnyranks\funnyranks_stats.sql"
+
+DROP DATABASE `funnyranks`;
+DROP DATABASE `funnyranks_autotest`;
+DROP DATABASE `funnyranks_stats`;
+DROP DATABASE `funnyranks_stats_autotest`;
+DROP DATABASE `funnyranks_stats_autotest2`;
+DROP DATABASE `funnyranks_stats_csdmru`;
+DROP DATABASE `funnyranks_stats_sandbox`;
+
+CREATE DATABASE `funnyranks` CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+CREATE DATABASE `funnyranks_autotest` CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+CREATE DATABASE `funnyranks_stats` CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+CREATE DATABASE `funnyranks_stats_autotest` CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+CREATE DATABASE `funnyranks_stats_autotest2` CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+CREATE DATABASE `funnyranks_stats_csdmru` CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+CREATE DATABASE `funnyranks_stats_sandbox` CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root --password=root --comments funnyranks < "C:\Users\user\IdeaProjects\funnyranks\funnyranks.sql"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root --password=root --comments funnyranks_autotest < "C:\Users\user\IdeaProjects\funnyranks\funnyranks.sql"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root --password=root --comments funnyranks_stats < "C:\Users\user\IdeaProjects\funnyranks\funnyranks_stats.sql"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root --password=root --comments funnyranks_stats_autotest < "C:\Users\user\IdeaProjects\funnyranks\funnyranks_stats.sql"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root --password=root --comments funnyranks_stats_autotest2 < "C:\Users\user\IdeaProjects\funnyranks\funnyranks_stats.sql"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root --password=root --comments funnyranks_stats_csdmru < "C:\Users\user\IdeaProjects\funnyranks\funnyranks_stats.sql"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root --password=root --comments funnyranks_stats_sandbox < "C:\Users\user\IdeaProjects\funnyranks\funnyranks_stats.sql"

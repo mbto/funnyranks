@@ -13,7 +13,9 @@ import org.jooq.Field;
 import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.impl.DSL;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -21,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.github.mbto.funnyranks.common.Constants.YYYYMMDD_HHMMSS_PATTERN;
@@ -36,6 +39,9 @@ import static com.github.mbto.funnyranks.common.utils.ProjectUtils.*;
 @Profile("test")
 @Slf4j
 public class ProjectMaker {
+    @Autowired
+    private ThreadPoolTaskExecutor senderTE;
+
     @Getter
     private List<Player> players;
     @Getter
@@ -53,28 +59,37 @@ public class ProjectMaker {
 
     public void process(Project project, Runnable job, List<TableField<?, ?>> excludeColumns) {
         this.excludeColumns = excludeColumns;
-        try (HikariDataSource hds = buildHikariDataSource(project, null)) {
+//        try (HikariDataSource hds = buildHikariDataSource(project, null, "TRANSACTION_SERIALIZABLE")) {
+        try (HikariDataSource hds = buildHikariDataSource(project, null, "TRANSACTION_REPEATABLE_READ")) {
             if (project.getDatabaseServerTimezone() != null)
                 hds.addDataSourceProperty("serverTimezone", project.getDatabaseServerTimezone().getLiteral());
             log.info(hikariDataSourceToString(hds));
             DSLContext funnyRanksStatsDsl = configurateJooqContext(hds, 10, FUNNYRANKS_STATS.getName(), project.getDatabaseSchema());
-            funnyRanksStatsDsl.transaction(config -> {
-                DSLContext transactionalDsl = DSL.using(config);
+            try {
+                funnyRanksStatsDsl.execute("SET FOREIGN_KEY_CHECKS = 0");
+                funnyRanksStatsDsl.truncate(HISTORY).execute();
+                funnyRanksStatsDsl.truncate(PLAYER).execute();
+                funnyRanksStatsDsl.truncate(PLAYER_IP).execute();
+                funnyRanksStatsDsl.truncate(PLAYER_NAME).execute();
+                funnyRanksStatsDsl.truncate(PLAYER_STEAMID).execute();
+            } finally {
                 try {
-                    transactionalDsl.execute("SET FOREIGN_KEY_CHECKS = 0");
-                    transactionalDsl.truncate(HISTORY).execute();
-                    transactionalDsl.truncate(PLAYER).execute();
-                    transactionalDsl.truncate(PLAYER_IP).execute();
-                    transactionalDsl.truncate(PLAYER_NAME).execute();
-                    transactionalDsl.truncate(PLAYER_STEAMID).execute();
-                } finally {
-                    try {
-                        transactionalDsl.execute("SET FOREIGN_KEY_CHECKS = 1");
-                    } catch (Throwable ignored) {
-                    }
-                }
-            });
+                    funnyRanksStatsDsl.execute("SET FOREIGN_KEY_CHECKS = 1");
+                } catch (Throwable ignored) {}
+            }
             job.run();
+            while (true) {
+                int queueSize = senderTE.getThreadPoolExecutor().getQueue().size();
+                int activeCount = senderTE.getActiveCount();
+                if (queueSize == 0 && activeCount == 0) {
+                    break;
+                }
+                log.debug("Waiting empty queue, queueSize=" + queueSize + ", activeCount=" + activeCount);
+                try {
+                    //noinspection BusyWait
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                } catch (Throwable ignored) {}
+            }
             funnyRanksStatsDsl.transaction(config -> {
                 DSLContext transactionalDsl = DSL.using(config);
                 players = transactionalDsl.select(buildRequestedFields(PLAYER))
@@ -107,7 +122,9 @@ public class ProjectMaker {
                             quote(player.getKills()),
                             quote(player.getDeaths()),
                             quote(player.getTimeSecs()),
-                            quote(player.getRankId()),
+                            quote(player.getStarsUnicode()),
+                            quote(player.getStarsCompat()),
+                            quote(player.getLevel()),
                             quote(player.getLastseenDatetime(), YYYYMMDD_HHMMSS_PATTERN),
                             quote(player.getLastServerName())
                     ) + "}" + (i + 1 < players.size() ? "," : "")
@@ -148,7 +165,7 @@ public class ProjectMaker {
                     ) + "}" + (i + 1 < playerSteamIds.size() ? "," : "")
             );
         }
-        System.out.println("");
+        System.out.println();
     }
 
     private String quote(Object value) {

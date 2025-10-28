@@ -9,7 +9,7 @@ import com.github.mbto.funnyranks.common.model.funnyranks_stats.tables.pojos.Pla
 import com.github.mbto.funnyranks.common.model.funnyranks_stats.tables.pojos.PlayerIp;
 import com.github.mbto.funnyranks.common.model.funnyranks_stats.tables.pojos.PlayerName;
 import com.github.mbto.funnyranks.common.model.funnyranks_stats.tables.pojos.PlayerSteamid;
-import com.github.mbto.funnyranks.handlers.App90;
+import com.github.mbto.funnyranks.broker.handlers.App90;
 import com.github.mbto.funnyranks.service.EventService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -18,13 +18,13 @@ import org.jooq.InsertSetMoreStep;
 import org.jooq.impl.DSL;
 import org.jooq.types.UInteger;
 import org.jooq.types.UShort;
-import org.junit.*;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -42,10 +42,28 @@ import static com.github.mbto.funnyranks.common.model.funnyranks.tables.Project.
 import static com.github.mbto.funnyranks.common.model.funnyranks_stats.Tables.*;
 import static com.github.mbto.funnyranks.common.utils.ProjectUtils.timezoneEnumByLiteral;
 import static java.util.Arrays.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+/*
+-- SET GLOBAL validate_password_check_user_name=OFF;
+-- SET GLOBAL validate_password_length=0;
+-- SET GLOBAL validate_password_mixed_case_count=0;
+-- SET GLOBAL validate_password_number_count=0;
+-- SET GLOBAL validate_password_policy=LOW;
+-- SET GLOBAL validate_password_special_char_count=0;
+
+CREATE USER `funnyranks_autotest`@`%` IDENTIFIED WITH mysql_native_password BY 'funnyranks_autotest';
+
+GRANT ALL PRIVILEGES ON `funnyranks_autotest`.* TO `funnyranks_autotest`@`%`;
+
+CREATE USER `funnyranks_stats_autotest`@`%` IDENTIFIED WITH mysql_native_password BY 'funnyranks_stats_autotest';
+
+GRANT ALL PRIVILEGES ON `funnyranks_stats_autotest`.* TO `funnyranks_stats_autotest`@`%`;
+
+GRANT ALL PRIVILEGES ON `funnyranks_stats_autotest2`.* TO `funnyranks_stats_autotest`@`%`;
+*/
 @SpringBootTest
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @ActiveProfiles("test")
 @DependsOn("distributorTE")
 @Slf4j
@@ -62,21 +80,35 @@ public class App90Nick {
     @Autowired
     private ProjectMaker projectMaker;
 
-    @BeforeClass
-    public static void beforeClass() {
+    public Project buildDefaultProject(String projectName, String projectSchema) {
+        Project project = new Project();
+        project.setName(projectName);
+//        project.setDescription();
+        project.setLanguage(ProjectLanguage.en);
+        project.setMergeType(ProjectMergeType.Nick);
+        project.setDatabaseHostport("127.0.0.1:3306");
+        project.setDatabaseSchema(projectSchema);
+        project.setDatabaseUsername("funnyranks_stats_autotest"); /* grants same as `stats`, but with TRUNCATE */
+        project.setDatabasePassword("funnyranks_stats_autotest");
+        project.setDatabaseServerTimezone(timezoneEnumByLiteral.get("Europe/Moscow"));
+        return project;
+    }
+
+    @BeforeAll
+    public static void beforeAll() {
         System.getProperties().setProperty("org.jooq.no-logo", "true");
     }
 
-    @AfterClass
-    public static void afterClass() {
+    @AfterAll
+    public static void afterAll() {
     }
 
-    @Before
+    @BeforeEach
     public void beforeTest() {
         truncateTables();
     }
 
-    @After
+    @AfterEach
     public void afterTest() {
 //        truncateTables();
     }
@@ -88,7 +120,7 @@ public class App90Nick {
 
     @Test
     public void server1_27015_27015() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -98,10 +130,10 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server1.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"2", "0", "11", "960", "1", "2021-01-08 13:33:00", "Test server at 27015"}, // 16m 0s
-                {"1", "10", "1", "720", "1", "2021-01-08 13:32:00", "Test server at 27015"} // 12m 0s
+                {"2", "0", "11", "960", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:33:00", "Test server at 27015"}, // 16m 0s
+                {"1", "10", "1", "720", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:32:00", "Test server at 27015"} // 12m 0s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "12.12.12.12", "2021-01-08 13:32:00"}
@@ -116,7 +148,7 @@ public class App90Nick {
 
     @Test
     public void another_project_server1_27015_27015() {
-        Project project = buildDefaultProject("CS project 1", "funnyranks_stats_project2");
+        Project project = buildDefaultProject("Autotest project 2", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -126,10 +158,10 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server1.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"2", "0", "11", "960", "1", "2021-01-08 13:33:00", "Test server at 27015"}, // 16m 0s
-                {"1", "10", "1", "720", "1", "2021-01-08 13:32:00", "Test server at 27015"} // 12m 0s
+                {"2", "0", "11", "960", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:33:00", "Test server at 27015"}, // 16m 0s
+                {"1", "10", "1", "720", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:32:00", "Test server at 27015"} // 12m 0s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "12.12.12.12", "2021-01-08 13:32:00"}
@@ -144,7 +176,7 @@ public class App90Nick {
 
     @Test
     public void server1_27015_27015_with_changing_names() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -154,12 +186,12 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server1_changing_names.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"2", "0", "12", "1740", "1", "2021-01-08 13:46:00", "Test server at 27015"}, // 29m 0s
-                {"4", "4", "0", "660", "1", "2021-01-08 13:43:00", "Test server at 27015"}, // 11m 0s
-                {"1", "5", "0", "600", "1", "2021-01-08 13:45:00", "Test server at 27015"}, // 10m 0s
-                {"3", "2", "1", "480", "1", "2021-01-08 13:27:00", "Test server at 27015"} // 8m 0s
+                {"2", "0", "12", "1740", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:46:00", "Test server at 27015"}, // 29m 0s
+                {"4", "4", "0", "660", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:43:00", "Test server at 27015"}, // 11m 0s
+                {"1", "5", "0", "480", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:45:00", "Test server at 27015"}, // 8m 0s
+                {"3", "2", "1", "480", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:27:00", "Test server at 27015"} // 8m 0s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "12.12.12.12", "2021-01-08 13:45:00"},
@@ -180,8 +212,35 @@ public class App90Nick {
     }
 
     @Test
+    public void server1_27015_27015_kick1() {
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
+        funnyRanksAdminDsl.transaction(config -> {
+            DSLContext transactionalDsl = DSL.using(config);
+            UInteger brokerId = addBroker(transactionalDsl, "broker_1");
+            addProject(transactionalDsl, project);
+            addPort(transactionalDsl, brokerId, project.getId(), 27015, 27015, true, true, false, false);
+        });
+        eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
+        projectMaker.process(project, () -> {
+            logsSender.sendLogs("server1_kick1.log", 27015, 27015);
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        assertPlayers(projectMaker, new String[][]{
+                {"1", "0", "0", "273", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2025-10-28 20:48:26", "Test server at 27015"} // 4m 33s
+        });
+        assertPlayerIps(projectMaker, new String[][]{
+                {"1", "1", "31.31.31.31", "2025-10-28 20:48:26"}
+        });
+        assertPlayerNames(projectMaker, new String[][]{
+                {"1", "1", "z3nith_", "2025-10-28 20:48:26"}
+        });
+        assertPlayerSteamIds(projectMaker, new String[][]{
+                {"1", "1", "0:545454545", "2025-10-28 20:48:26"}
+        });
+    }
+
+    @Test
     public void server1_27015_27015_max_ips_steamids() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -191,9 +250,9 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server1_max_ips_steamids.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "0", "0", "2040", "1", "2021-01-08 14:05:00", "Test server at 27015"} // 34m 0s
+                {"1", "0", "0", "1020", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 14:05:00", "Test server at 27015"} // 17m 0s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"3", "1", "127.0.0.3", "2021-01-08 14:05:00"},
@@ -236,7 +295,7 @@ public class App90Nick {
 
     @Test
     public void server4_27016_27016() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -246,24 +305,24 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server4.log", 27016, 27016);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"2", "17", "11", "449", "1", "2021-01-08 21:25:07", "Test server at 27016"}, // 7m 29s
-                {"15", "11", "21", "443", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 23s
-                {"13", "10", "16", "443", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 23s
-                {"14", "13", "17", "440", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 20s
-                {"12", "21", "14", "438", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 18s
-                {"11", "8", "22", "438", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 18s
-                {"5", "8", "11", "438", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 18s
-                {"8", "14", "19", "435", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 15s
-                {"4", "12", "10", "435", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 15s
-                {"9", "20", "10", "434", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 14s
-                {"10", "18", "10", "434", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 14s
-                {"1", "14", "17", "422", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 2s
-                {"7", "20", "16", "417", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 6m 57s
-                {"3", "14", "16", "415", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 6m 55s
-                {"16", "13", "17", "400", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 6m 40s
-                {"6", "14", "16", "395", "1", "2021-01-08 21:24:58", "Test server at 27016"} // 6m 35s
+                {"2", "17", "11", "449", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:25:07", "Test server at 27016"}, // 7m 29s
+                {"15", "11", "21", "443", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 23s
+                {"13", "10", "16", "443", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 23s
+                {"14", "13", "17", "440", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 20s
+                {"12", "21", "14", "438", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 18s
+                {"11", "8", "22", "438", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 18s
+                {"5", "8", "11", "438", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 18s
+                {"8", "14", "19", "435", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 15s
+                {"4", "12", "10", "435", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 15s
+                {"9", "20", "10", "434", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 14s
+                {"10", "18", "10", "434", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 14s
+                {"1", "14", "17", "422", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 7m 2s
+                {"7", "20", "16", "417", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 6m 57s
+                {"3", "14", "16", "415", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 6m 55s
+                {"16", "13", "17", "400", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"}, // 6m 40s
+                {"6", "14", "16", "395", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27016"} // 6m 35s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "2", "127.0.0.1", "2021-01-08 21:25:07"}
@@ -292,7 +351,7 @@ public class App90Nick {
 
     @Test
     public void server1_27015_27016_start_session_on_action() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -302,11 +361,11 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server1.log", 27015, 27016);
-        }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         /* logs sends in parallel, so PLAYER.LAST_SERVER_NAME is undefined */
         assertPlayers(projectMaker, new String[][]{
-                {"2", "0", "22", "1920", "1", "2021-01-08 13:33:00", null}, // 32m 0s
-                {"1", "20", "2", "1440", "1", "2021-01-08 13:32:00", null} // 24m 0s
+                {"2", "0", "22", "1920", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:33:00", null}, // 32m 0s
+                {"1", "20", "2", "1440", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:32:00", null} // 24m 0s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "12.12.12.12", "2021-01-08 13:32:00"}
@@ -321,7 +380,7 @@ public class App90Nick {
 
     @Test
     public void server1_27015_27016_dont_start_session_on_action() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -331,11 +390,11 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server1.log", 27015, 27016);
-        }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         /* logs sends in parallel, so PLAYER.LAST_SERVER_NAME is undefined */
         assertPlayers(projectMaker, new String[][]{
-                {"1", "20", "2", "1920", "1", "2021-01-08 13:32:00", null}, // 32m 0s
-                {"2", "0", "22", "1920", "1", "2021-01-08 13:33:00", null} // 32m 0s
+                {"2", "0", "22", "1920", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:33:00", null}, // 32m 0s
+                {"1", "20", "2", "1680", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 13:32:00", null} // 28m 0s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "12.12.12.12", "2021-01-08 13:32:00"}
@@ -350,7 +409,7 @@ public class App90Nick {
 
     @Test
     public void server2_27015_27015_start_session_on_action() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -360,12 +419,12 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server2.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "7", "4", "94", "1", "2021-01-08 20:52:15", "Test server at 27015"}, // 1m 34s
-                {"2", "0", "8", "89", "1", "2021-01-08 20:52:10", "Test server at 27015"}, // 1m 29s
-                {"4", "5", "1", "76", "1", "2021-01-08 20:52:10", "Test server at 27015"}, // 1m 16s
-                {"3", "3", "2", "51", "1", "2021-01-08 20:52:10", "Test server at 27015"} // 51s
+                {"1", "7", "4", "94", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:15", "Test server at 27015"}, // 1m 34s
+                {"2", "0", "8", "89", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:10", "Test server at 27015"}, // 1m 29s
+                {"4", "5", "1", "76", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:10", "Test server at 27015"}, // 1m 16s
+                {"3", "3", "2", "51", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:10", "Test server at 27015"} // 51s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "127.0.0.1", "2021-01-08 20:52:15"}
@@ -382,7 +441,7 @@ public class App90Nick {
 
     @Test
     public void server2_27015_27015_dont_start_session_on_action() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -392,12 +451,12 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server2.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "7", "5", "221", "1", "2021-01-08 20:58:38", "Test server at 27015"}, // 3m 41s
-                {"3", "3", "2", "113", "1", "2021-01-08 20:52:10", "Test server at 27015"}, // 1m 53s
-                {"4", "5", "1", "110", "1", "2021-01-08 20:52:10", "Test server at 27015"}, // 1m 50s
-                {"2", "0", "8", "104", "1", "2021-01-08 20:52:10", "Test server at 27015"} // 1m 44s
+                {"1", "7", "5", "220", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:58:38", "Test server at 27015"}, // 3m 40s
+                {"3", "3", "2", "113", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:10", "Test server at 27015"}, // 1m 53s
+                {"4", "5", "1", "110", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:10", "Test server at 27015"}, // 1m 50s
+                {"2", "0", "8", "104", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:10", "Test server at 27015"} // 1m 44s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "127.0.0.1", "2021-01-08 20:52:15"}
@@ -414,7 +473,7 @@ public class App90Nick {
 
     @Test
     public void server3_27015_27015_start_session_on_action() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -424,10 +483,10 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server3.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"2", "0", "1", "95", "1", "2021-01-08 20:52:16", "Test server at 27015"}, // 1m 35s
-                {"1", "1", "0", "94", "1", "2021-01-08 20:52:15", "Test server at 27015"} // 1m 34s
+                {"2", "0", "1", "95", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:16", "Test server at 27015"}, // 1m 35s
+                {"1", "1", "0", "94", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:15", "Test server at 27015"} // 1m 34s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "127.0.0.1", "2021-01-08 20:52:15"}
@@ -442,7 +501,7 @@ public class App90Nick {
 
     @Test
     public void server3_27015_27015_dont_start_session_on_action() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -452,12 +511,12 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server3.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "1", "0", "127", "1", "2021-01-08 20:52:15", "Test server at 27015"}, // 2m 7s
-                {"3", "0", "0", "119", "1", "2021-01-08 20:52:16", "Test server at 27015"}, // 1m 59s
-                {"4", "0", "0", "116", "1", "2021-01-08 20:52:16", "Test server at 27015"}, // 1m 56s
-                {"2", "0", "1", "110", "1", "2021-01-08 20:52:16", "Test server at 27015"} // 1m 50s
+                {"1", "1", "0", "126", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:15", "Test server at 27015"}, // 2m 6s
+                {"3", "0", "0", "119", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:16", "Test server at 27015"}, // 1m 59s
+                {"4", "0", "0", "116", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:16", "Test server at 27015"}, // 1m 56s
+                {"2", "0", "1", "110", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 20:52:16", "Test server at 27015"} // 1m 50s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "127.0.0.1", "2021-01-08 20:52:15"}
@@ -474,7 +533,7 @@ public class App90Nick {
 
     @Test
     public void server4_27015_27015() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -484,24 +543,24 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server4.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"2", "17", "11", "449", "1", "2021-01-08 21:25:07", "Test server at 27015"}, // 7m 29s
-                {"15", "11", "21", "443", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 23s
-                {"13", "10", "16", "443", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 23s
-                {"14", "13", "17", "440", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 20s
-                {"12", "21", "14", "438", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 18s
-                {"11", "8", "22", "438", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 18s
-                {"5", "8", "11", "438", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 18s
-                {"8", "14", "19", "435", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 15s
-                {"4", "12", "10", "435", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 15s
-                {"9", "20", "10", "434", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 14s
-                {"10", "18", "10", "434", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 14s
-                {"1", "14", "17", "422", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 2s
-                {"7", "20", "16", "417", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 6m 57s
-                {"3", "14", "16", "415", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 6m 55s
-                {"16", "13", "17", "400", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 6m 40s
-                {"6", "14", "16", "395", "1", "2021-01-08 21:24:58", "Test server at 27015"} // 6m 35s
+                {"2", "17", "11", "449", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:25:07", "Test server at 27015"}, // 7m 29s
+                {"15", "11", "21", "443", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 23s
+                {"13", "10", "16", "443", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 23s
+                {"14", "13", "17", "440", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 20s
+                {"12", "21", "14", "438", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 18s
+                {"11", "8", "22", "438", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 18s
+                {"5", "8", "11", "438", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 18s
+                {"8", "14", "19", "435", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 15s
+                {"4", "12", "10", "435", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 15s
+                {"9", "20", "10", "434", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 14s
+                {"10", "18", "10", "434", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 14s
+                {"1", "14", "17", "422", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 7m 2s
+                {"7", "20", "16", "417", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 6m 57s
+                {"3", "14", "16", "415", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 6m 55s
+                {"16", "13", "17", "400", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"}, // 6m 40s
+                {"6", "14", "16", "395", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", "Test server at 27015"} // 6m 35s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "2", "127.0.0.1", "2021-01-08 21:25:07"}
@@ -530,7 +589,7 @@ public class App90Nick {
 
     @Test
     public void server4_27015_27025() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -540,25 +599,25 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server4.log", 27015, 27025);
-        }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         /* logs sends in parallel, so PLAYER.LAST_SERVER_NAME is undefined */
         assertPlayers(projectMaker, new String[][]{
-                {"2", "187", "121", "4939", "1", "2021-01-08 21:25:07", null}, // 1h 22m 19s
-                {"15", "121", "231", "4873", "1", "2021-01-08 21:24:58", null}, // 1h 21m 13s
-                {"13", "110", "176", "4873", "1", "2021-01-08 21:24:58", null}, // 1h 21m 13s
-                {"14", "143", "187", "4840", "1", "2021-01-08 21:24:58", null}, // 1h 20m 40s
-                {"12", "231", "154", "4818", "1", "2021-01-08 21:24:58", null}, // 1h 20m 18s
-                {"11", "88", "242", "4818", "1", "2021-01-08 21:24:58", null}, // 1h 20m 18s
-                {"5", "88", "121", "4818", "1", "2021-01-08 21:24:58", null}, // 1h 20m 18s
-                {"8", "154", "209", "4785", "1", "2021-01-08 21:24:58", null}, // 1h 19m 45s
-                {"4", "132", "110", "4785", "1", "2021-01-08 21:24:58", null}, // 1h 19m 45s
-                {"9", "220", "110", "4774", "2", "2021-01-08 21:24:58", null}, // 1h 19m 34s
-                {"10", "198", "110", "4774", "2", "2021-01-08 21:24:58", null}, // 1h 19m 34s
-                {"1", "154", "187", "4642", "1", "2021-01-08 21:24:58", null}, // 1h 17m 22s
-                {"7", "220", "176", "4587", "1", "2021-01-08 21:24:58", null}, // 1h 16m 27s
-                {"3", "154", "176", "4565", "1", "2021-01-08 21:24:58", null}, // 1h 16m 5s
-                {"16", "143", "187", "4400", "1", "2021-01-08 21:24:58", null}, // 1h 13m 20s
-                {"6", "154", "176", "4345", "1", "2021-01-08 21:24:58", null} // 1h 12m 25s
+                {"2", "187", "121", "4939", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:25:07", null}, // 1h 22m 19s
+                {"15", "121", "231", "4873", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 21m 13s
+                {"13", "110", "176", "4873", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 21m 13s
+                {"14", "143", "187", "4840", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 20m 40s
+                {"12", "231", "154", "4818", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 20m 18s
+                {"11", "88", "242", "4818", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 20m 18s
+                {"5", "88", "121", "4818", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 20m 18s
+                {"8", "154", "209", "4785", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 19m 45s
+                {"4", "132", "110", "4785", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 19m 45s
+                {"9", "220", "110", "4774", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 19m 34s
+                {"10", "198", "110", "4774", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 19m 34s
+                {"1", "154", "187", "4642", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 17m 22s
+                {"7", "220", "176", "4587", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 16m 27s
+                {"3", "154", "176", "4565", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 16m 5s
+                {"16", "143", "187", "4400", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 13m 20s
+                {"6", "154", "176", "4345", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null} // 1h 12m 25s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "2", "127.0.0.1", "2021-01-08 21:25:07"}
@@ -587,7 +646,7 @@ public class App90Nick {
 
     @Test
     public void ffa_27015_27015_start_session_on_action() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -597,10 +656,10 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("ffa.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "2", "0", "20", "1", "2021-01-08 23:42:21", "Test server at 27015"}, // 20s
-                {"2", "0", "2", "20", "1", "2021-01-08 23:42:21", "Test server at 27015"} // 20s
+                {"1", "2", "0", "20", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:42:21", "Test server at 27015"}, // 20s
+                {"2", "0", "2", "20", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:42:21", "Test server at 27015"} // 20s
         });
         assertPlayerIps(projectMaker, new String[][]{
         });
@@ -615,7 +674,7 @@ public class App90Nick {
 
     @Test
     public void ffa_27015_27015_dont_start_session_on_action() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -625,10 +684,10 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("ffa.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "2", "0", "76", "1", "2021-01-08 23:42:21", "Test server at 27015"}, // 1m 16s
-                {"2", "0", "2", "51", "1", "2021-01-08 23:42:21", "Test server at 27015"} // 51s
+                {"1", "2", "0", "76", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:42:21", "Test server at 27015"}, // 1m 16s
+                {"2", "0", "2", "51", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:42:21", "Test server at 27015"} // 51s
         });
         assertPlayerIps(projectMaker, new String[][]{
         });
@@ -643,7 +702,7 @@ public class App90Nick {
 
     @Test
     public void ffa_27015_27015_start_session_on_action_no_ffa() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -653,7 +712,7 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("ffa.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
         });
         assertPlayerIps(projectMaker, new String[][]{
@@ -666,7 +725,7 @@ public class App90Nick {
 
     @Test
     public void ffa_27015_27015_dont_start_session_on_action_no_ffa() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -676,10 +735,10 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("ffa.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "0", "0", "76", "1", "2021-01-08 23:42:21", "Test server at 27015"}, // 1m 16s
-                {"2", "0", "0", "51", "1", "2021-01-08 23:42:21", "Test server at 27015"} // 51s
+                {"1", "0", "0", "76", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:42:21", "Test server at 27015"}, // 1m 16s
+                {"2", "0", "0", "51", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:42:21", "Test server at 27015"} // 51s
         });
         assertPlayerIps(projectMaker, new String[][]{
         });
@@ -694,7 +753,7 @@ public class App90Nick {
 
     @Test
     public void no_ffa_27015_27015_start_session_on_action() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -704,10 +763,10 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("no_ffa.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "4", "0", "46", "1", "2021-01-08 23:45:56", "Test server at 27015"}, // 46s
-                {"2", "0", "4", "46", "1", "2021-01-08 23:45:56", "Test server at 27015"} // 46s
+                {"1", "4", "0", "46", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:45:56", "Test server at 27015"}, // 46s
+                {"2", "0", "4", "46", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:45:56", "Test server at 27015"} // 46s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "255.0.0.142", "2021-01-08 23:45:56"}
@@ -723,7 +782,7 @@ public class App90Nick {
 
     @Test
     public void no_ffa_27015_27015_dont_start_session_on_action() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -733,10 +792,10 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("no_ffa.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "4", "0", "101", "1", "2021-01-08 23:45:56", "Test server at 27015"}, // 1m 41s
-                {"2", "0", "4", "88", "1", "2021-01-08 23:45:56", "Test server at 27015"} // 1m 28s
+                {"1", "4", "0", "100", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:45:56", "Test server at 27015"}, // 1m 40s
+                {"2", "0", "4", "88", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:45:56", "Test server at 27015"} // 1m 28s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "255.0.0.142", "2021-01-08 23:45:56"}
@@ -752,7 +811,7 @@ public class App90Nick {
 
     @Test
     public void no_ffa_27015_27015_start_session_on_action_no_ffa() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -762,7 +821,7 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("no_ffa.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
         });
         assertPlayerIps(projectMaker, new String[][]{
@@ -775,7 +834,7 @@ public class App90Nick {
 
     @Test
     public void no_ffa_27015_27015_dont_start_session_on_action_no_ffa() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -785,10 +844,10 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("no_ffa.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "0", "0", "101", "1", "2021-01-08 23:45:56", "Test server at 27015"}, // 1m 41s
-                {"2", "0", "0", "88", "1", "2021-01-08 23:45:56", "Test server at 27015"} // 1m 28s
+                {"1", "0", "0", "100", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:45:56", "Test server at 27015"}, // 1m 40s
+                {"2", "0", "0", "88", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 23:45:56", "Test server at 27015"} // 1m 28s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "255.0.0.142", "2021-01-08 23:45:56"}
@@ -804,7 +863,7 @@ public class App90Nick {
 
     @Test
     public void server4_27015_27017_start_session_on_action_ignore_bots() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -814,7 +873,7 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server4.log", 27015, 27017);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
         });
         assertPlayerIps(projectMaker, new String[][]{
@@ -827,7 +886,7 @@ public class App90Nick {
 
     @Test
     public void server4_27015_27015_dont_start_session_on_action_ignore_bots() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -837,9 +896,9 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server4.log", 27015, 27015);
-        }, asList(PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "0", "0", "598", "1", "2021-01-08 21:25:07", "Test server at 27015"} // 9m 58s
+                {"1", "0", "0", "597", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:25:07", "Test server at 27015"} // 9m 57s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "127.0.0.1", "2021-01-08 21:25:07"}
@@ -853,7 +912,7 @@ public class App90Nick {
 
     @Test
     public void server4_27015_27017_dont_start_session_on_action_ignore_bots() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -863,10 +922,10 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server4.log", 27015, 27017);
-        }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         /* logs sends in parallel, so PLAYER.LAST_SERVER_NAME is undefined */
         assertPlayers(projectMaker, new String[][]{
-                {"1", "0", "0", "1794", "1", "2021-01-08 21:25:07", null} // 29m 54s
+                {"1", "0", "0", "1791", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:25:07", null} // 29m 51s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "127.0.0.1", "2021-01-08 21:25:07"}
@@ -880,7 +939,7 @@ public class App90Nick {
 
     @Test
     public void server4_manual_flush_27014_27018_dont_start_session_on_action() {
-        Project project = buildDefaultProject("Default CS project", "funnyranks_stats");
+        Project project = buildDefaultProject("Autotest project 1", "funnyranks_stats_autotest");
         funnyRanksAdminDsl.transaction(config -> {
             DSLContext transactionalDsl = DSL.using(config);
             UInteger brokerId = addBroker(transactionalDsl, "broker_1");
@@ -890,37 +949,43 @@ public class App90Nick {
         eventService.addEventToDefaultPartition(project.getId(), APPLY_CHANGES, false);
         projectMaker.process(project, () -> {
             logsSender.sendLogs("server4_only_load.log", 27014, 27018);
-            for (UShort portValue : portDataByPort.keySet()) {
+            for (Map.Entry<UShort, PortData> entry : portDataByPort.entrySet()) {
+                UShort portValue = entry.getKey();
+                PortData portData = entry.getValue();
                 try {
                     eventService.flushSessions(portValue, FLUSH_SESSIONS_FROM_FRONTEND, false);
                     log.info("Flush " + portValue + " registered");
                 } catch (Throwable e) {
-                    log.warn(e.getMessage());
+                    if(portData.isPortActive()) {
+                        log.warn(e.getMessage());
+                    } else {
+                        log.info(e.getMessage() + " (port not active)");
+                    }
                 }
             }
             try {
                 Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             } catch (Throwable ignored) {
             }
-        }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.COUNTRY_NAME, PLAYER_IP.COUNTRY_EMOJI, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
+        }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         /* logs sends in parallel, so PLAYER.LAST_SERVER_NAME is undefined */
         assertPlayers(projectMaker, new String[][]{
-                {"2", "51", "33", "1767", "1", "2021-01-08 21:24:58", null}, // 29m 27s
-                {"11", "24", "66", "1350", "1", "2021-01-08 21:24:58", null}, // 22m 30s
-                {"3", "42", "48", "1347", "1", "2021-01-08 21:24:58", null}, // 22m 27s
-                {"15", "33", "63", "1347", "1", "2021-01-08 21:24:58", null}, // 22m 27s
-                {"6", "42", "48", "1344", "1", "2021-01-08 21:24:58", null}, // 22m 24s
-                {"13", "30", "48", "1344", "1", "2021-01-08 21:24:58", null}, // 22m 24s
-                {"14", "39", "51", "1341", "1", "2021-01-08 21:24:58", null}, // 22m 21s
-                {"4", "36", "30", "1341", "1", "2021-01-08 21:24:58", null}, // 22m 21s
-                {"12", "63", "42", "1338", "1", "2021-01-08 21:24:58", null}, // 22m 18s
-                {"8", "42", "57", "1338", "1", "2021-01-08 21:24:58", null}, // 22m 18s
-                {"7", "60", "48", "1335", "1", "2021-01-08 21:24:58", null}, // 22m 15s
-                {"16", "39", "51", "1335", "1", "2021-01-08 21:24:58", null}, // 22m 15s
-                {"9", "60", "30", "1332", "1", "2021-01-08 21:24:58", null}, // 22m 12s
-                {"1", "42", "51", "1332", "1", "2021-01-08 21:24:58", null}, // 22m 12s
-                {"10", "54", "30", "1329", "1", "2021-01-08 21:24:58", null}, // 22m 9s
-                {"5", "24", "33", "1329", "1", "2021-01-08 21:24:58", null} // 22m 9s
+                {"2", "51", "33", "1764", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 29m 24s
+                {"11", "24", "66", "1350", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 30s
+                {"3", "42", "48", "1347", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 27s
+                {"15", "33", "63", "1347", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 27s
+                {"6", "42", "48", "1344", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 24s
+                {"13", "30", "48", "1344", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 24s
+                {"14", "39", "51", "1341", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 21s
+                {"4", "36", "30", "1341", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 21s
+                {"12", "63", "42", "1338", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 18s
+                {"8", "42", "57", "1338", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 18s
+                {"7", "60", "48", "1335", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 15s
+                {"16", "39", "51", "1335", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 15s
+                {"9", "60", "30", "1332", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 12s
+                {"1", "42", "51", "1332", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 12s
+                {"10", "54", "30", "1329", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 9s
+                {"5", "24", "33", "1329", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null} // 22m 9s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "2", "127.0.1.1", "2021-01-08 21:24:58"}
@@ -983,19 +1048,7 @@ public class App90Nick {
                 .set(BROKER.NAME, brokerName)
                 .returning(BROKER.ID).fetchOne().getId();
     }
-    public Project buildDefaultProject(String projectName, String projectSchema) {
-        Project project = new Project();
-        project.setName(projectName);
-//        project.setDescription();
-        project.setLanguage(ProjectLanguage.en);
-        project.setMergeType(ProjectMergeType.Nick);
-        project.setDatabaseHostport("127.0.0.1:3306");
-        project.setDatabaseSchema(projectSchema);
-        project.setDatabaseUsername("funnyranks_stats"); /* grants same as `stats`, but with TRUNCATE */
-        project.setDatabasePassword("funnyranks_stats");
-        project.setDatabaseServerTimezone(timezoneEnumByLiteral.get("Europe/Moscow"));
-        return project;
-    }
+
     private void addProject(DSLContext transactionalDsl, Project project) {
         log.info("Add project name: " + project.getName() + ", hostport: " + project.getDatabaseHostport() + ", schema: " + project.getDatabaseSchema());
         transactionalDsl.insertInto(PROJECT)
@@ -1055,8 +1108,8 @@ public class App90Nick {
         });
     }
     /**
-     * {"2", "0", "11", "66", "1", "2021-08-01 13:16:08", "Test server 127.0.0.1:27015"}, // 1m 6s
-     * {"1", "10", "1", "10", "1", "2021-08-01 13:16:07", "Test server 127.0.0.1:27015"} // 10s
+     {"2", "51", "33", "1767", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 29m 27s
+     {"11", "24", "66", "1350", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 22m 30s
      */
     private Player makePlayerFromRaw(String[] sourceRaw) {
         Player player = new Player();
@@ -1064,15 +1117,15 @@ public class App90Nick {
         player.setKills(UInteger.valueOf(sourceRaw[1]));
         player.setDeaths(UInteger.valueOf(sourceRaw[2]));
         player.setTimeSecs(UInteger.valueOf(sourceRaw[3]));
-
-        if (StringUtils.isNoneBlank(sourceRaw[4]))
-            player.setRankId(UInteger.valueOf(sourceRaw[4]));
-
-        if (StringUtils.isNoneBlank(sourceRaw[5]))
-            player.setLastseenDatetime(LocalDateTime.parse(sourceRaw[5], YYYYMMDD_HHMMSS_PATTERN));
-
-        if (StringUtils.isNoneBlank(sourceRaw[6]))
-            player.setLastServerName(sourceRaw[6]);
+        player.setStarsUnicode(sourceRaw[4]);
+        player.setStarsCompat(sourceRaw[5]);
+        if (StringUtils.isNoneBlank(sourceRaw[6])) {
+            player.setLevel(UInteger.valueOf(sourceRaw[6]));
+        }
+        if (StringUtils.isNoneBlank(sourceRaw[7])) {
+            player.setLastseenDatetime(LocalDateTime.parse(sourceRaw[7], YYYYMMDD_HHMMSS_PATTERN));
+        }
+        player.setLastServerName(sourceRaw[8]);
         return player;
     }
     /**

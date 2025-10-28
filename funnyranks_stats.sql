@@ -25,18 +25,30 @@ DROP TABLE IF EXISTS `history`;
 CREATE TABLE `history` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `player_id` int unsigned NOT NULL,
-  `old_rank_id` int unsigned DEFAULT NULL,
-  `new_rank_id` int unsigned DEFAULT NULL,
+  `old_level` int unsigned DEFAULT NULL,
+  `new_level` int unsigned DEFAULT NULL,
   `reg_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `history_player_id_idx` (`player_id`),
-  KEY `history_old_rank_id_idx` (`old_rank_id`),
-  KEY `history_new_rank_id_idx` (`new_rank_id`),
-  CONSTRAINT `history_new_rank_id_fk` FOREIGN KEY (`new_rank_id`) REFERENCES `rank` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `history_old_rank_id_fk` FOREIGN KEY (`old_rank_id`) REFERENCES `rank` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  KEY `history_old_level_idx` (`old_level`),
+  KEY `history_new_level_idx` (`new_level`),
+  KEY `history_player_id_id_idx` (`player_id` DESC,`id` DESC) USING BTREE,
+  KEY `history_player_id_fk` (`player_id`),
+  CONSTRAINT `history_new_level_fk` FOREIGN KEY (`new_level`) REFERENCES `rank` (`level`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `history_old_level_fk` FOREIGN KEY (`old_level`) REFERENCES `rank` (`level`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `history_player_id_fk` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=2;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `history`
+--
+
+LOCK TABLES `history` WRITE;
+/*!40000 ALTER TABLE `history` DISABLE KEYS */;
+set autocommit=0;
+/*!40000 ALTER TABLE `history` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `player`
@@ -50,14 +62,28 @@ CREATE TABLE `player` (
   `kills` int unsigned NOT NULL DEFAULT '0',
   `deaths` int unsigned NOT NULL DEFAULT '0',
   `time_secs` int unsigned NOT NULL DEFAULT '0',
-  `rank_id` int unsigned DEFAULT NULL,
+  `level` int unsigned DEFAULT NULL,
+  `stars_unicode` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `stars_compat` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `lastseen_datetime` datetime DEFAULT NULL,
   `last_server_name` varchar(31) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `player_rank_id_idx` (`rank_id`),
-  CONSTRAINT `player_rank_id_fk` FOREIGN KEY (`rank_id`) REFERENCES `rank` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+  KEY `top_cursor_cover_idx` (`level` DESC,`time_secs` DESC,`id` DESC,`kills`,`deaths`) USING BTREE,
+  KEY `player_rank_level_fk_idx` (`level`),
+  CONSTRAINT `player_rank_level_fk_idx` FOREIGN KEY (`level`) REFERENCES `rank` (`level`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `player`
+--
+
+LOCK TABLES `player` WRITE;
+/*!40000 ALTER TABLE `player` DISABLE KEYS */;
+set autocommit=0;
+/*!40000 ALTER TABLE `player` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -65,11 +91,15 @@ CREATE TABLE `player` (
 /*!50003 SET character_set_results = utf8mb4 */ ;
 /*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 /*!50032 DROP TRIGGER IF EXISTS player_BEFORE_INSERT */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `player_BEFORE_INSERT` BEFORE INSERT ON `player` FOR EACH ROW BEGIN
-	set NEW.rank_id = calculate_rank_id(NEW.kills, NEW.deaths, NEW.time_secs);
+  DECLARE ranks_count INT UNSIGNED DEFAULT 0;
+  set ranks_count = (SELECT COUNT(*) FROM `rank`);
+	set NEW.level = calculate_level(NEW.kills, NEW.deaths, NEW.time_secs, ranks_count);
+	set NEW.stars_unicode = build_stars_unicode(NEW.level, ranks_count);
+	set NEW.stars_compat = build_stars_compat(NEW.level, ranks_count);
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -83,18 +113,22 @@ DELIMITER ;
 /*!50003 SET character_set_results = utf8mb4 */ ;
 /*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 /*!50032 DROP TRIGGER IF EXISTS player_BEFORE_UPDATE */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `player_BEFORE_UPDATE` BEFORE UPDATE ON `player` FOR EACH ROW BEGIN
+	DECLARE ranks_count INT UNSIGNED DEFAULT 0;
 	IF (!(OLD.kills <=> NEW.kills)
      or !(OLD.deaths <=> NEW.deaths)
      or !(OLD.time_secs <=> NEW.time_secs)) THEN
-		set NEW.rank_id = calculate_rank_id(NEW.kills, NEW.deaths, NEW.time_secs);
+		set ranks_count = (SELECT COUNT(*) FROM `rank`);
+		set NEW.level = calculate_level(NEW.kills, NEW.deaths, NEW.time_secs, ranks_count);
         
-		if (!(OLD.rank_id <=> NEW.rank_id)) then
-			insert into history (player_id, old_rank_id, new_rank_id)
-			values (NEW.id, OLD.rank_id, NEW.rank_id);
+		if (!(OLD.level <=> NEW.level)) then
+			set NEW.stars_unicode = build_stars_unicode(NEW.level, ranks_count);
+			set NEW.stars_compat = build_stars_compat(NEW.level, ranks_count);
+			insert into history (player_id, old_level, new_level)
+			values (NEW.id, OLD.level, NEW.level);
 		end if;
 	END IF;
 END */;;
@@ -115,74 +149,27 @@ CREATE TABLE `player_ip` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `player_id` int unsigned NOT NULL,
   `ip` int unsigned NOT NULL,
-  `ip4` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci GENERATED ALWAYS AS (inet_ntoa(`ip`)) VIRTUAL COMMENT 'Auto-generated IP format v4 - AAA.BBB.CCC.DDD',
-  `country_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `country_emoji` char(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ip4` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci GENERATED ALWAYS AS (inet_ntoa(`ip`)) STORED COMMENT 'Auto-generated IP format v4 - AAA.BBB.CCC.DDD',
+  `maxmind_geoname_id` int unsigned DEFAULT NULL,
   `reg_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `player_ip_player_id_idx` (`player_id`),
-  KEY `player_ip_ip_idx` (`ip`),
-  KEY `player_ip_ip4_idx` (`ip4`),
+  UNIQUE KEY `uqx_ip` (`player_id`,`ip`),
+  KEY `player_ip_find_idx` (`player_id`,`reg_datetime` DESC,`id` DESC,`ip`) USING BTREE,
+  KEY `player_ip_ip_idx` (`ip`,`reg_datetime` DESC,`id` DESC,`player_id`) USING BTREE,
   CONSTRAINT `player_ip_player_id_fk` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
-/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
-/*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8mb4 */ ;
-/*!50003 SET character_set_results = utf8mb4 */ ;
-/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
-/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
-/*!50032 DROP TRIGGER IF EXISTS player_ip_BEFORE_INSERT */;
-DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `player_ip_BEFORE_INSERT` BEFORE INSERT ON `player_ip` FOR EACH ROW BEGIN
-	declare error_msg text;
-	declare existed_id int unsigned;
-    
-    select id into existed_id from `player_ip` 
-		where player_id = NEW.player_id 
-        and ip = NEW.ip limit 1;
-    
-	if(existed_id is not null) then
-		set error_msg = concat('Unable to insert ip=', NEW.ip, ' to player_ip, due for player_id=', NEW.player_id, ' already existed id=', existed_id);
-		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
-	end if;
-END */;;
-DELIMITER ;
-/*!50003 SET sql_mode              = @saved_sql_mode */ ;
-/*!50003 SET character_set_client  = @saved_cs_client */ ;
-/*!50003 SET character_set_results = @saved_cs_results */ ;
-/*!50003 SET collation_connection  = @saved_col_connection */ ;
-/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
-/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
-/*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8mb4 */ ;
-/*!50003 SET character_set_results = utf8mb4 */ ;
-/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
-/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
-/*!50032 DROP TRIGGER IF EXISTS player_ip_BEFORE_UPDATE */;
-DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `player_ip_BEFORE_UPDATE` BEFORE UPDATE ON `player_ip` FOR EACH ROW BEGIN
-	declare error_msg text;
-	declare existed_id int unsigned;
-    
-    select id into existed_id from `player_ip` 
-		where player_id = NEW.player_id 
-        and ip = NEW.ip 
-        and id != OLD.id limit 1;
-    
-	if(existed_id is not null) then
-		set error_msg = concat('Unable to update player_ip from ', OLD.ip, ' to ', NEW.ip, ', due for player_id=', NEW.player_id, ' already existed id=', existed_id);
-		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
-	end if;
-END */;;
-DELIMITER ;
-/*!50003 SET sql_mode              = @saved_sql_mode */ ;
-/*!50003 SET character_set_client  = @saved_cs_client */ ;
-/*!50003 SET character_set_results = @saved_cs_results */ ;
-/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Dumping data for table `player_ip`
+--
+
+LOCK TABLES `player_ip` WRITE;
+/*!40000 ALTER TABLE `player_ip` DISABLE KEYS */;
+set autocommit=0;
+/*!40000 ALTER TABLE `player_ip` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `player_name`
@@ -197,68 +184,23 @@ CREATE TABLE `player_name` (
   `name` varchar(31) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `reg_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `player_name_player_id_idx` (`player_id`),
-  KEY `player_name_name_idx` (`name`),
+  UNIQUE KEY `uqx_name` (`player_id`,`name`),
+  KEY `player_name_find_idx` (`player_id`,`reg_datetime` DESC,`id` DESC,`name`) USING BTREE,
+  KEY `player_name_name_idx` (`name`,`reg_datetime` DESC,`id` DESC,`player_id`) USING BTREE,
   CONSTRAINT `player_name_player_id_fk` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
-/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
-/*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8mb4 */ ;
-/*!50003 SET character_set_results = utf8mb4 */ ;
-/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
-/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
-/*!50032 DROP TRIGGER IF EXISTS player_name_BEFORE_INSERT */;
-DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `player_name_BEFORE_INSERT` BEFORE INSERT ON `player_name` FOR EACH ROW BEGIN
-	declare error_msg text;
-	declare existed_id int unsigned;
-    
-    select id into existed_id from `player_name` 
-		where player_id = NEW.player_id 
-        and name = NEW.name limit 1;
-    
-	if(existed_id is not null) then
-		set error_msg = concat('Unable to insert name=', NEW.name, ' to player_name, due for player_id=', NEW.player_id, ' already existed id=', existed_id);
-		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
-	end if;
-END */;;
-DELIMITER ;
-/*!50003 SET sql_mode              = @saved_sql_mode */ ;
-/*!50003 SET character_set_client  = @saved_cs_client */ ;
-/*!50003 SET character_set_results = @saved_cs_results */ ;
-/*!50003 SET collation_connection  = @saved_col_connection */ ;
-/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
-/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
-/*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8mb4 */ ;
-/*!50003 SET character_set_results = utf8mb4 */ ;
-/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
-/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
-/*!50032 DROP TRIGGER IF EXISTS player_name_BEFORE_UPDATE */;
-DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `player_name_BEFORE_UPDATE` BEFORE UPDATE ON `player_name` FOR EACH ROW BEGIN
-	declare error_msg text;
-	declare existed_id int unsigned;
-    
-    select id into existed_id from `player_name` 
-		where player_id = NEW.player_id 
-        and name = NEW.name 
-        and id != OLD.id limit 1;
-    
-	if(existed_id is not null) then
-		set error_msg = concat('Unable to update player_name from ', OLD.name, ' to ', NEW.name, ', due for player_id=', NEW.player_id, ' already existed id=', existed_id);
-		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
-	end if;
-END */;;
-DELIMITER ;
-/*!50003 SET sql_mode              = @saved_sql_mode */ ;
-/*!50003 SET character_set_client  = @saved_cs_client */ ;
-/*!50003 SET character_set_results = @saved_cs_results */ ;
-/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Dumping data for table `player_name`
+--
+
+LOCK TABLES `player_name` WRITE;
+/*!40000 ALTER TABLE `player_name` DISABLE KEYS */;
+set autocommit=0;
+/*!40000 ALTER TABLE `player_name` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `player_steamid`
@@ -271,17 +213,27 @@ CREATE TABLE `player_steamid` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `player_id` int unsigned NOT NULL,
   `steamid64` decimal(17,0) unsigned NOT NULL,
-  `steamid2` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci GENERATED ALWAYS AS (concat((`steamid64` % 2),_utf8mb4':',truncate((((`steamid64` - 76561197960265728) - (`steamid64` % 2)) / 2),0))) VIRTUAL COMMENT 'Auto-generated SteamID format v2 - STEAM_0:X:YYYYYYYYYY - https://developer.valvesoftware.com/wiki/SteamID',
-  `steamid3` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci GENERATED ALWAYS AS (concat(1,_utf8mb4':',(`steamid64` - 76561197960265728))) VIRTUAL COMMENT 'Auto-generated SteamID format v3 - [U:X:YYYYYYYYYY] - https://developer.valvesoftware.com/wiki/SteamID',
+  `steamid2` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci GENERATED ALWAYS AS (concat((`steamid64` % 2),_utf8mb4':',truncate((((`steamid64` - 76561197960265728) - (`steamid64` % 2)) / 2),0))) STORED COMMENT 'Auto-generated SteamID format v2 - STEAM_0:X:YYYYYYYYYY - https://developer.valvesoftware.com/wiki/SteamID',
+  `steamid3` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci GENERATED ALWAYS AS (concat(1,_utf8mb4':',(`steamid64` - 76561197960265728))) STORED COMMENT 'Auto-generated SteamID format v3 - [U:X:YYYYYYYYYY] - https://developer.valvesoftware.com/wiki/SteamID',
   `reg_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `player_steamid_player_id_idx` (`player_id`),
-  KEY `player_steamid_steamid64_idx` (`steamid64`),
-  KEY `player_steamid_steamid2_idx` (`steamid2`),
-  KEY `player_steamid_steamid3_idx` (`steamid3`),
+  UNIQUE KEY `uqx_steamid` (`player_id`,`steamid64`),
+  KEY `player_steamid_find_idx` (`player_id`,`reg_datetime` DESC,`id` DESC,`steamid64`) USING BTREE,
+  KEY `player_steamid_steamid64_idx` (`steamid64`,`reg_datetime` DESC,`id` DESC,`player_id`) USING BTREE,
   CONSTRAINT `player_steamid_player_id_fk` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `player_steamid`
+--
+
+LOCK TABLES `player_steamid` WRITE;
+/*!40000 ALTER TABLE `player_steamid` DISABLE KEYS */;
+set autocommit=0;
+/*!40000 ALTER TABLE `player_steamid` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -289,26 +241,16 @@ CREATE TABLE `player_steamid` (
 /*!50003 SET character_set_results = utf8mb4 */ ;
 /*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 /*!50032 DROP TRIGGER IF EXISTS player_steamid_BEFORE_INSERT */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `player_steamid_BEFORE_INSERT` BEFORE INSERT ON `player_steamid` FOR EACH ROW BEGIN
-	declare error_msg text;
-	declare existed_id int unsigned;
-    
-    if(NEW.steamid64 < 76561197960265729 or NEW.steamid64 > 76561202255233023) then
-		set error_msg = concat('Invalid steamid64=', NEW.steamid64);
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
-		end if;
-    
-    select id into existed_id from `player_steamid` 
-		where player_id = NEW.player_id 
-        and steamid64 = NEW.steamid64 limit 1;
-    
-		if(existed_id is not null) then
-			set error_msg = concat('Unable to insert steamid64=', NEW.steamid64, ' to player_steamid, due for player_id=', NEW.player_id, ' already existed id=', existed_id);
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
-    end if;
+  declare error_msg text;
+  
+  if(!is_valid_steamid64(NEW.steamid64, false)) then
+      set error_msg = concat('Invalid steamid64=', NEW.steamid64);
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
+  end if;
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -322,28 +264,16 @@ DELIMITER ;
 /*!50003 SET character_set_results = utf8mb4 */ ;
 /*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 /*!50032 DROP TRIGGER IF EXISTS player_steamid_BEFORE_UPDATE */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `player_steamid_BEFORE_UPDATE` BEFORE UPDATE ON `player_steamid` FOR EACH ROW BEGIN
 	declare error_msg text;
-	declare existed_id int unsigned;
-    
-    if(NEW.steamid64 < 76561197960265729 or NEW.steamid64 > 76561202255233023) then
-		set error_msg = concat('Invalid steamid64=', NEW.steamid64);
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
-		end if;
-    
-    select id into existed_id from `player_steamid` 
-		where player_id = NEW.player_id 
-        and steamid64 = NEW.steamid64
-        and id != OLD.id limit 1;
-    
-	if(existed_id is not null) then
-		set error_msg = concat('Unable to update player_steamid from ', OLD.steamid64, ' to ', NEW.steamid64, ', due for player_id=', NEW.player_id, ' already existed id=', existed_id);
-		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
-		
-	end if;
+  
+  if(!is_valid_steamid64(NEW.steamid64, false)) then
+      set error_msg = concat('Invalid steamid64=', NEW.steamid64);
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
+  end if;
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -378,7 +308,7 @@ CREATE TABLE `rank` (
 LOCK TABLES `rank` WRITE;
 /*!40000 ALTER TABLE `rank` DISABLE KEYS */;
 set autocommit=0;
-INSERT INTO `rank` VALUES (1,1,'¯\\_(ツ)_/¯','Сынок','Son'),(2,2,'¯\\_(ツ)_/¯','Тюфяк','Mattress'),(3,3,'¯\\_(ツ)_/¯','Овощ','Vegetable'),(4,4,'¯\\_(ツ)_/¯','Кабан','Boar'),(5,5,'ˁ°ᴥ°ˀ','Силач','Strongman'),(6,6,'ˁ°ᴥ°ˀ','Шароеб','Spray shooter'),(7,7,'ˁ°ᴥ°ˀ','Пацан','Kid'),(8,8,'ˁ°ᴥ°ˀ','Смертник','Bomber'),(9,9,'(°‿°)','Везунчик','Lucky'),(10,10,'(°‿°)','Жульбан','Rogue'),(11,11,'(°‿°)','Гопник','Chav'),(12,12,'(°‿°)','Кэмпер','Camper'),(13,13,'ᕙ(°ʖ°)ᕗ','Помощник','Assistant'),(14,14,'ᕙ(°ʖ°)ᕗ','Вуйко','Vuiko'),(15,15,'ᕙ(°ʖ°)ᕗ','Донышко','Bottom'),(16,16,'ᕙ(°ʖ°)ᕗ','Профан','Profane'),(17,17,'ᕦ(°_°)ᕤ','Титушка','Instigator'),(18,18,'ᕦ(°_°)ᕤ','Боцман','Boatswain'),(19,19,'ᕦ(°_°)ᕤ','Школьник','Schoolboy'),(20,20,'ᕦ(°_°)ᕤ','Мусор','Rubbish'),(21,21,'龴ↀ‿ↀ龴','Отбой','Hang up'),(22,22,'龴ↀ‿ↀ龴','ПТУ-шник','Vocational school'),(23,23,'龴ↀ‿ↀ龴','Зек','Snakes'),(24,24,'龴ↀ‿ↀ龴','Бывалый','Experienced'),(25,25,'(ಥ﹏ಥ)','Прораб','Foreman'),(26,26,'(ಥ﹏ಥ)','Жестянщик','Tinsmith'),(27,27,'(ಥ﹏ಥ)','Пахан','Head of the gang'),(28,28,'(ಥ﹏ಥ)','Директор','Director'),(29,29,'(ง°ل͜°)ง','Гастролер','Guest performer'),(30,30,'(ง°ل͜°)ง','Мордоворот','Jowly'),(31,31,'(ง°ل͜°)ง','Геймер','Gamer'),(32,32,'(ง°ل͜°)ง','Отважный','Brave'),(33,33,'(づ° ³°)づ','Убийца','Killer'),(34,34,'(づ° ³°)づ','Халявщик','Freeloader'),(35,35,'(づ° ³°)づ','Псих','Crazy'),(36,36,'(づ° ³°)づ','Йовбак','Mercenary'),(37,37,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Громила','Brute'),(38,38,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Мужик','Man'),(39,39,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Дезертир','Deserter'),(40,40,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Боец','Fighter'),(41,41,'( ° ͜ʖ °)','Софт','Cheater'),(42,42,'( ° ͜ʖ °)','Громила-здоровяк','Big brute'),(43,43,'( ° ͜ʖ °)','Партизан','Partisan'),(44,44,'( ° ͜ʖ °)','Сенсей','Sensei'),(45,45,'t(ಠ益ಠt)','Рыцарь','Knight'),(46,46,'t(ಠ益ಠt)','Спецназовец','Spetsnaz'),(47,47,'t(ಠ益ಠt)','Тащит всю команду','Drags the whole team'),(48,48,'t(ಠ益ಠt)','Олдфаг','Oldfag'),(49,49,'(ノಠ益ಠ)ノ彡','Каратель','The Punisher'),(50,50,'(ノಠ益ಠ)ノ彡','Здоровяк','Big man'),(51,51,'(ノಠ益ಠ)ノ彡','Аим','Aim'),(52,52,'(ノಠ益ಠ)ノ彡','Фраер','Virgin'),(53,53,'ლ(ಠ益ಠლ)','Штурмовой','Assault'),(54,54,'ლ(ಠ益ಠლ)','Босс','Boss'),(55,55,'（︶︿︶）','Старая школа','Old School'),(56,56,'（︶︿︶）','Непобедимый','Invincible');
+INSERT INTO `rank` VALUES (1,1,'¯\\_(ツ)_/¯','Гастролер','Guest'),(2,2,'¯\\_(ツ)_/¯','Тюфяк','Mattress'),(3,3,'¯\\_(ツ)_/¯','Овощ','Vegetable'),(4,4,'¯\\_(ツ)_/¯','Кабан','Boar'),(5,5,'ˁ°ᴥ°ˀ','Силач','Strongman'),(6,6,'ˁ°ᴥ°ˀ','Рандомщик','Spray shooter'),(7,7,'ˁ°ᴥ°ˀ','Пацан','Kid'),(8,8,'ˁ°ᴥ°ˀ','Смертник','Bomber'),(9,9,'(°‿°)','Везунчик','Lucky'),(10,10,'(°‿°)','Жульбан','Rogue'),(11,11,'(°‿°)','Гопник','Chav'),(12,12,'(°‿°)','Кэмпер','Camper'),(13,13,'ᕙ(°ʖ°)ᕗ','Помощник','Assistant'),(14,14,'ᕙ(°ʖ°)ᕗ','Вуйко','Vuiko'),(15,15,'ᕙ(°ʖ°)ᕗ','Донышко','Bottom'),(16,16,'ᕙ(°ʖ°)ᕗ','Профан','Profane'),(17,17,'ᕦ(°_°)ᕤ','Титушка','Instigator'),(18,18,'ᕦ(°_°)ᕤ','Боцман','Boatswain'),(19,19,'ᕦ(°_°)ᕤ','Школьник','Schoolboy'),(20,20,'ᕦ(°_°)ᕤ','Мусор','Rubbish'),(21,21,'龴ↀ‿ↀ龴','Отбой','Hang up'),(22,22,'龴ↀ‿ↀ龴','ПТУ-шник','Vocational school'),(23,23,'龴ↀ‿ↀ龴','Зек','Snakes'),(24,24,'龴ↀ‿ↀ龴','Бывалый','Experienced'),(25,25,'(ಥ﹏ಥ)','Прораб','Foreman'),(26,26,'(ಥ﹏ಥ)','Жестянщик','Tinsmith'),(27,27,'(ಥ﹏ಥ)','Пахан','Head of the gang'),(28,28,'(ಥ﹏ಥ)','Директор','Director'),(29,29,'(ง°ل͜°)ง','Сынок','Son'),(30,30,'(ง°ل͜°)ง','Мордоворот','Jowly'),(31,31,'(ง°ل͜°)ง','Геймер','Gamer'),(32,32,'(ง°ل͜°)ง','Отважный','Brave'),(33,33,'(づ° ³°)づ','Убийца','Killer'),(34,34,'(づ° ³°)づ','Халявщик','Freeloader'),(35,35,'(づ° ³°)づ','Псих','Crazy'),(36,36,'(づ° ³°)づ','Йовбак','Mercenary'),(37,37,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Громила','Brute'),(38,38,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Мужик','Man'),(39,39,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Дезертир','Deserter'),(40,40,'(ﾉ°ヮ°)ﾉ*:･ﾟ✧','Боец','Fighter'),(41,41,'( ° ͜ʖ °)','Софт','Cheater'),(42,42,'( ° ͜ʖ °)','Громила-здоровяк','Big brute'),(43,43,'( ° ͜ʖ °)','Партизан','Partisan'),(44,44,'( ° ͜ʖ °)','Сенсей','Sensei'),(45,45,'t(ಠ益ಠt)','Рыцарь','Knight'),(46,46,'t(ಠ益ಠt)','Спецназовец','Spetsnaz'),(47,47,'t(ಠ益ಠt)','Тащит всю команду','Drags the whole team'),(48,48,'t(ಠ益ಠt)','Олдфаг','Oldfag'),(49,49,'(ノಠ益ಠ)ノ彡','Каратель','The Punisher'),(50,50,'(ノಠ益ಠ)ノ彡','Здоровяк','Big man'),(51,51,'(ノಠ益ಠ)ノ彡','Аим','Aim'),(52,52,'(ノಠ益ಠ)ノ彡','Фраер','Virgin'),(53,53,'ლ(ಠ益ಠლ)','Штурмовой','Assault'),(54,54,'ლ(ಠ益ಠლ)','Босс','Boss'),(55,55,'（︶︿︶）','Старая школа','Old School'),(56,56,'（︶︿︶）','Непобедимый','Invincible');
 /*!40000 ALTER TABLE `rank` ENABLE KEYS */;
 UNLOCK TABLES;
 commit;
@@ -389,11 +319,17 @@ commit;
 /*!50003 SET character_set_results = utf8mb4 */ ;
 /*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 /*!50032 DROP TRIGGER IF EXISTS rank_AFTER_INSERT */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `rank_AFTER_INSERT` AFTER INSERT ON `rank` FOR EACH ROW BEGIN
-	update player p set p.rank_id = calculate_rank_id(p.kills, p.deaths, p.time_secs);
+  DECLARE ranks_count INT UNSIGNED DEFAULT 0;
+  set ranks_count = (SELECT COUNT(*) FROM `rank`);
+
+	update player p set p.level = calculate_level(p.kills, p.deaths, p.time_secs, ranks_count);
+	update player p set
+    p.stars_unicode = build_stars_unicode(p.level, ranks_count),
+    p.stars_compat = build_stars_compat(p.level, ranks_count);
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -407,13 +343,18 @@ DELIMITER ;
 /*!50003 SET character_set_results = utf8mb4 */ ;
 /*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 /*!50032 DROP TRIGGER IF EXISTS rank_AFTER_UPDATE */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `rank_AFTER_UPDATE` AFTER UPDATE ON `rank` FOR EACH ROW BEGIN
+	DECLARE ranks_count INT UNSIGNED DEFAULT 0;
 	if(!(OLD.level <=> NEW.level)) then
-		update player p set p.rank_id = calculate_rank_id(p.kills, p.deaths, p.time_secs);
-    end if;
+    set ranks_count = (SELECT COUNT(*) FROM `rank`);
+    update player p set p.level = calculate_level(p.kills, p.deaths, p.time_secs, ranks_count);
+    update player p set
+      p.stars_unicode = build_stars_unicode(p.level, ranks_count),
+      p.stars_compat = build_stars_compat(p.level, ranks_count);
+  end if;
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -427,17 +368,27 @@ DELIMITER ;
 /*!50003 SET character_set_results = utf8mb4 */ ;
 /*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 /*!50032 DROP TRIGGER IF EXISTS rank_AFTER_DELETE */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `rank_AFTER_DELETE` AFTER DELETE ON `rank` FOR EACH ROW BEGIN
-	update player p set p.rank_id = calculate_rank_id(p.kills, p.deaths, p.time_secs);
+  DECLARE ranks_count INT UNSIGNED DEFAULT 0;
+  set ranks_count = (SELECT COUNT(*) FROM `rank`);
+
+	update player p set p.level = calculate_level(p.kills, p.deaths, p.time_secs, ranks_count);
+	update player p set
+    p.stars_unicode = build_stars_unicode(p.level, ranks_count),
+    p.stars_compat = build_stars_compat(p.level, ranks_count);
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Dumping events for database 'funnyranks_stats'
+--
 
 --
 -- Dumping routines for database 'funnyranks_stats'
@@ -489,7 +440,7 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
-/*!50003 DROP FUNCTION IF EXISTS `build_stars` */;
+/*!50003 DROP FUNCTION IF EXISTS `build_stars_compat` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -499,13 +450,12 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` FUNCTION `build_stars`(level int unsigned, ranks_total int unsigned) RETURNS varchar(6) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
+CREATE DEFINER=`root`@`%` FUNCTION `build_stars_compat`(level int unsigned, ranks_total int unsigned) RETURNS varchar(6) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
     DETERMINISTIC
 BEGIN
 	declare black_stars int unsigned default greatest(1, least(6, truncate(level * 6 / greatest(ranks_total, 1), 0)));
 	declare white_stars int unsigned default 6 - black_stars;
 	
--- 	return concat(repeat("★", black_stars), repeat("☆", white_stars)); // HLDS 90 not supported stars characters in hud/chat
 	return concat(repeat("彡", black_stars), repeat("ノ", white_stars));
 END ;;
 DELIMITER ;
@@ -513,7 +463,7 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
-/*!50003 DROP FUNCTION IF EXISTS `build_stars2` */;
+/*!50003 DROP FUNCTION IF EXISTS `build_stars_unicode` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -523,7 +473,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` FUNCTION `build_stars2`(level int unsigned, ranks_total int unsigned) RETURNS varchar(6) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
+CREATE DEFINER=`root`@`%` FUNCTION `build_stars_unicode`(level int unsigned, ranks_total int unsigned) RETURNS varchar(6) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
     DETERMINISTIC
 BEGIN
 	declare black_stars int unsigned default greatest(1, least(6, truncate(level * 6 / greatest(ranks_total, 1), 0)));
@@ -536,7 +486,7 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
-/*!50003 DROP FUNCTION IF EXISTS `calculate_rank_id` */;
+/*!50003 DROP FUNCTION IF EXISTS `calculate_level` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -546,40 +496,91 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` FUNCTION `calculate_rank_id`(kills int unsigned, deaths int unsigned, time_secs int unsigned) RETURNS int unsigned
+CREATE DEFINER=`root`@`%` FUNCTION `calculate_level`(
+    kills     INT UNSIGNED,
+    deaths    INT UNSIGNED,
+    time_secs INT UNSIGNED,
+    ranks_count INT UNSIGNED
+) RETURNS int unsigned
     READS SQL DATA
     DETERMINISTIC
 BEGIN
-    declare ranks_count int unsigned default (select count(*) from `rank`);
+/*
+==========  КАК РЕГУЛИРОВАТЬ СКОРОСТЬ ПРОКАЧКИ  ==========
+
+PTS_PER_LVL = 1.25 – цена уровня (меньше = быстрее)
+TIME_WEIGHT = 0.95 – 95 % очков даёт время (kreedz-friendly)
+MAX_TIME_PTS = 75 – потолок выше фактических 57.6 LN-ед.
+PTS_PER_HOUR = 0.12 – 0.12 LN-ед./час (600 ч = 72 LN-ед.)
     
-    declare hero_days int unsigned default 30;
-    declare hero_kills int unsigned default 133/*frags per day*/ * hero_days;
-    declare hero_skill int unsigned default calculate_skill(hero_kills, hero_kills * 0.4/* 40% */ );
-    declare hero_time int unsigned default (hero_days/*days*/ * 24/*hours*/ * 60/*mins*/ * 60/*secs*/ );
-    
-    declare skill double default calculate_skill(kills, deaths);
-    
-    declare kills_pos int unsigned default greatest(1, least(ranks_count, ceil((skill * ranks_count) / greatest(hero_skill, 1))));
-    declare time_secs_pos int unsigned default greatest(1, least(ranks_count, floor((time_secs * ranks_count) / greatest(hero_time, 1))));
-	declare rank_num int unsigned default floor((kills_pos + time_secs_pos) / 2);
-    
-    declare new_rank_id int unsigned;
-    
-	if ranks_count > 0 then
-		with cte as (select (row_number() over()) as num, id from `rank` order by level asc)
-			select id from cte where num = rank_num into new_rank_id;
-            
-        return ifnull(new_rank_id, (select id from `rank` order by level asc limit 1));
-	end if;
-    
-    return null;
+Параметр               Эффект                  Пример изменения
+--------------------   ---------------------   -------------------------
+PTS_PER_LVL ↑          Медленнее               1.0 → 2.0  (в 2 раза дольше)
+PTS_PER_LVL ↓          Быстрее                 1.0 → 0.5  (в 2 раза быстрее)
+
+TIME_WEIGHT ↑          Время важнее            0.6 → 0.95 (kreedz-игрок растёт быстрее)
+TIME_WEIGHT ↓          K/D важнее              0.6 → 0.3  (фраги важнее времени)
+
+MAX_TIME_PTS ↑         Выше потолок по времени 40 → 80  (можно «качаться» дольше)
+MAX_TIME_PTS ↓         Ниже потолок            40 → 20  (время быстро перестаёт помогать)
+
+PTS_PER_HOUR ↑         Больше очков за час     0.12 → 0.24 (каждый час в 2 раза ценнее)
+PTS_PER_HOUR ↓         Меньше очков за час     0.12 → 0.06 (в 2 раза медленнее)
+*/
+    DECLARE PTS_PER_LVL   DOUBLE DEFAULT 1.25;   -- +1 ур. за 1.25 LN-ед.
+    DECLARE MIN_TIME_SEC  INT    DEFAULT 3*3600;
+    DECLARE MIN_KD        DOUBLE DEFAULT 0.30;
+    DECLARE TIME_WEIGHT   DOUBLE DEFAULT 0.95;   -- 95 % время
+    DECLARE MAX_TIME_PTS  DOUBLE DEFAULT 75;   -- потолок выше 68.5
+    DECLARE PTS_PER_HOUR  DOUBLE DEFAULT 0.12; -- 0.12 LN-ед./час
+
+    DECLARE skill_pts DOUBLE DEFAULT 0;
+    DECLARE time_pts  DOUBLE DEFAULT 0;
+    DECLARE total_pts DOUBLE DEFAULT 0;
+    DECLARE rating    DOUBLE DEFAULT 0;
+    DECLARE result    INT UNSIGNED DEFAULT 1;
+
+    /* ----------  1. Входной порог  ---------- */
+    IF time_secs < MIN_TIME_SEC THEN
+        RETURN 1;
+    END IF;
+
+    /*  K/D ниже минимума  */
+    IF deaths = 0 THEN
+        IF kills = 0 THEN
+            RETURN 1;               -- 0/0
+        END IF;
+        -- только фраги: считаем K/D = ∞, но skill = LN(1+kills) - LN(MIN_KD)
+        SET skill_pts := GREATEST(0, LN(1+kills) - LN(MIN_KD));
+    ELSE
+        IF kills/deaths < MIN_KD THEN
+            RETURN 1;
+        END IF;
+        SET skill_pts := GREATEST(0, LN(kills) - LN(deaths) - LN(MIN_KD));
+    END IF;
+
+    /* ----------  3. Time-очки  ---------- */
+    IF time_secs > 0 THEN
+        SET time_pts := LEAST(MAX_TIME_PTS, time_secs / 3600 * PTS_PER_HOUR);
+    ELSE
+        SET time_pts := 0;
+    END IF;
+
+    /* ----------  4. Итоговые очки  ---------- */
+    SET total_pts := (1 - TIME_WEIGHT) * skill_pts + TIME_WEIGHT * time_pts;
+    SET rating    := total_pts / PTS_PER_LVL;
+
+    /* ----------  5. Ближайший уровень 1..ranks_count  ---------- */
+    SET result := GREATEST(1, LEAST(ranks_count, FLOOR(rating + 0.5)));
+
+    RETURN result;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
-/*!50003 DROP FUNCTION IF EXISTS `calculate_skill` */;
+/*!50003 DROP FUNCTION IF EXISTS `convert_steamid2_to_steamid64` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -589,24 +590,36 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` FUNCTION `calculate_skill`(kills bigint, deaths bigint) RETURNS int
+CREATE DEFINER=`root`@`%` FUNCTION `convert_steamid2_to_steamid64`(steamid2 varchar(22)) RETURNS decimal(17,0)
     DETERMINISTIC
 BEGIN
-    declare total_kills_deaths bigint default (kills + deaths);
-    declare kills_ratio double default 0;
-    declare weight double default 0;
-    
-    if total_kills_deaths > 0 then
-        set kills_ratio = kills / total_kills_deaths;
-        if kills_ratio > 0 then
-            set weight = (kills - deaths) / kills_ratio;
-        else
-            set weight = 0;
-        end if;
-        return round(100 * (kills_ratio * (weight / 100.0)), 0);
-    else
-        return 0;
-    end if;
+  if (!is_valid_steamid2(steamid2, true, true)) then
+		return null;
+  end if;
+return 76561197960265728 + CAST(SUBSTRING(steamid2, 9, 1) AS UNSIGNED) + CAST(SUBSTRING(steamid2, 11) * 2 AS UNSIGNED);
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `convert_steamid64_to_steamid2` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` FUNCTION `convert_steamid64_to_steamid2`(steamid64 decimal(17,0)) RETURNS text CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
+    DETERMINISTIC
+BEGIN
+  if (!is_valid_steamid64(steamid64, true)) then
+		return null;
+end if;
+return concat((`steamid64` % 2),':',truncate((((`steamid64` - 76561197960265728) - (`steamid64` % 2)) / 2),0));
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -623,14 +636,437 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` FUNCTION `declension`(value int, opt1 varchar(32), opt2 varchar(32), opt3 varchar(32)) RETURNS varchar(32) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
+CREATE DEFINER=`root`@`%` FUNCTION `declension`(
+    value INT,
+    opt1 VARCHAR(32),
+    opt2 VARCHAR(32),
+    opt3 VARCHAR(32)
+) RETURNS varchar(32) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
     DETERMINISTIC
 BEGIN
-	declare n int unsigned default abs(value);
-	if(n > 10 and n < 20) then return opt3; end if;
-	if((n mod 10) > 1 and (n mod 10) < 5) then return opt2; end if;
-	if((n mod 10) = 1) then return opt1; end if;
-	return opt3;
+    DECLARE n INT UNSIGNED DEFAULT ABS(value);
+    DECLARE last_two INT UNSIGNED DEFAULT n % 100;
+    DECLARE last_one INT UNSIGNED DEFAULT n % 10;
+    IF last_two BETWEEN 11 AND 19 THEN
+        RETURN opt3;
+    END IF;
+
+    IF last_one = 1 THEN
+        RETURN opt1;
+    ELSEIF last_one BETWEEN 2 AND 4 THEN
+        RETURN opt2;
+    ELSE
+        RETURN opt3;
+    END IF;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `get_last_ip4` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` FUNCTION `get_last_ip4`(p_player_id INT UNSIGNED) RETURNS varchar(15) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
+    READS SQL DATA
+    DETERMINISTIC
+BEGIN
+  DECLARE v_ip VARCHAR(15) DEFAULT NULL;
+  SELECT pip.ip4
+    INTO v_ip
+    FROM player_ip pip
+   WHERE pip.player_id = p_player_id
+   ORDER BY pip.reg_datetime DESC, pip.id DESC
+   LIMIT 1;
+  RETURN v_ip;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `get_last_name` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` FUNCTION `get_last_name`(p_player_id INT UNSIGNED) RETURNS varchar(31) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
+    READS SQL DATA
+    DETERMINISTIC
+BEGIN
+  DECLARE v_name VARCHAR(31) DEFAULT NULL;
+  SELECT pn.name
+    INTO v_name
+    FROM player_name pn
+   WHERE pn.player_id = p_player_id
+   ORDER BY pn.reg_datetime DESC, pn.id DESC
+   LIMIT 1;
+  RETURN v_name;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `get_last_steamid2` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` FUNCTION `get_last_steamid2`(p_player_id INT UNSIGNED) RETURNS varchar(20) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
+    READS SQL DATA
+    DETERMINISTIC
+BEGIN
+  DECLARE v_steamid2 VARCHAR(20) DEFAULT NULL;
+  SELECT ps.steamid2
+    INTO v_steamid2
+    FROM player_steamid ps
+   WHERE ps.player_id = p_player_id
+   ORDER BY ps.reg_datetime DESC, ps.id DESC
+   LIMIT 1;
+  RETURN v_steamid2;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `is_valid_ip4` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` FUNCTION `is_valid_ip4`(ip varchar(21), nullable boolean, with_port boolean) RETURNS tinyint unsigned
+    DETERMINISTIC
+BEGIN
+	if(nullable and ip is null) then
+		return true;
+	end if;
+    
+    if with_port then
+		return (select ip regexp "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):\\d{1,5}$") is true;
+	end if;
+	
+	return (select ip regexp "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$") is true;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `is_valid_steamid2` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` FUNCTION `is_valid_steamid2`(steamid2 varchar(22), nullable boolean, only_legal boolean) RETURNS tinyint unsigned
+    DETERMINISTIC
+BEGIN
+  declare steamid64 decimal(17,0) unsigned;
+	if(nullable and steamid2 is null) then
+		return true;
+	end if;
+	if(only_legal) then
+	  if((select steamid2 regexp "^STEAM_0:[0-1]:\\d+$") is false) then
+		  return false;
+    end if;
+		set steamid64 = 76561197960265728 + CAST(SUBSTRING(steamid2, 9, 1) AS UNSIGNED) + CAST(SUBSTRING(steamid2, 11) * 2 AS UNSIGNED);
+		return is_valid_steamid64(steamid64, false);
+	end if;
+    
+    return (select steamid2 regexp "^STEAM_\\d:\\d:\\d+$") is true;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP FUNCTION IF EXISTS `is_valid_steamid64` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` FUNCTION `is_valid_steamid64`(steamid64 decimal(17,0), nullable boolean) RETURNS tinyint unsigned
+    DETERMINISTIC
+BEGIN
+	if(nullable and steamid64 is null) then
+		return true;
+	end if;
+  if(steamid64 is null or steamid64 < 76561197960265729 or steamid64 > 76561202255233023) then
+    return false;
+  end if;
+  return true;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `HistoryByIdOrAll` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `HistoryByIdOrAll`(
+    IN target_id INT UNSIGNED,        -- NULL → вся история, иначе по игроку
+    IN display_type VARCHAR(7),       -- 'nick', 'ip', 'steamid'
+    IN lang VARCHAR(5),
+    IN is_unicode TINYINT UNSIGNED,
+    IN poffset INT UNSIGNED,
+    IN plimit INT UNSIGNED
+)
+    READS SQL DATA
+BEGIN
+    IF target_id IS NOT NULL THEN
+        SELECT
+            h.reg_datetime,
+            p.id,
+            CASE
+              WHEN display_type = 'ip' THEN get_last_ip4(p.id)
+              WHEN display_type = 'steamid' THEN get_last_steamid2(p.id)
+              ELSE get_last_name(p.id)
+            END AS identity,
+            CASE WHEN is_unicode = 1
+                THEN p.stars_unicode
+                ELSE p.stars_compat
+            END AS stars,
+            h.old_level,
+            CASE WHEN lang = 'ru'
+              THEN r_old.name_ru
+              ELSE r_old.name_en
+            END AS old_rank_name,
+            r_old.kaomoji old_kaomoji,
+            h.new_level,
+            CASE WHEN lang = 'ru'
+              THEN r_new.name_ru
+              ELSE r_new.name_en
+            END AS new_rank_name,
+            r_new.kaomoji new_kaomoji
+        FROM history h
+        JOIN player p ON p.id = h.player_id
+        LEFT JOIN `rank` r_old ON r_old.level = h.old_level
+        LEFT JOIN `rank` r_new ON r_new.level = h.new_level
+        WHERE h.player_id = target_id
+        ORDER BY h.id DESC
+        LIMIT poffset, plimit;
+
+    ELSE
+        SELECT
+            h.reg_datetime,
+            p.id,
+            CASE
+              WHEN display_type = 'ip' THEN get_last_ip4(p.id)
+              WHEN display_type = 'steamid' THEN get_last_steamid2(p.id)
+              ELSE get_last_name(p.id)
+            END AS identity,
+            CASE WHEN is_unicode = 1
+                THEN p.stars_unicode
+                ELSE p.stars_compat
+            END AS stars,
+            h.old_level,
+            CASE WHEN lang = 'ru'
+              THEN r_old.name_ru
+              ELSE r_old.name_en
+            END AS old_rank_name,
+            r_old.kaomoji old_kaomoji,
+            h.new_level,
+            CASE WHEN lang = 'ru'
+              THEN r_new.name_ru
+              ELSE r_new.name_en
+            END AS new_rank_name,
+            r_new.kaomoji new_kaomoji
+        FROM history h
+        JOIN player p ON p.id = h.player_id
+        LEFT JOIN `rank` r_old ON r_old.level = h.old_level
+        LEFT JOIN `rank` r_new ON r_new.level = h.new_level
+        ORDER BY h.id DESC
+        LIMIT poffset, plimit;
+    END IF;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `HistoryByIdOrAllPrettyRanks` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `HistoryByIdOrAllPrettyRanks`(
+    IN target_id INT UNSIGNED,        -- NULL → вся история, иначе по игроку
+    IN display_type VARCHAR(7),       -- 'nick', 'ip', 'steamid'
+    IN lang VARCHAR(5),
+    IN is_unicode TINYINT UNSIGNED,
+    IN poffset INT UNSIGNED,
+    IN plimit INT UNSIGNED
+)
+    READS SQL DATA
+BEGIN
+    IF target_id IS NOT NULL THEN
+        SELECT
+            h.reg_datetime,
+            p.id,
+            CASE
+              WHEN display_type = 'ip' THEN get_last_ip4(p.id)
+              WHEN display_type = 'steamid' THEN get_last_steamid2(p.id)
+              ELSE get_last_name(p.id)
+            END AS identity,
+            CASE WHEN is_unicode = 1
+                THEN p.stars_unicode
+                ELSE p.stars_compat
+            END AS stars,
+            CASE
+                WHEN h.old_level IS NOT NULL THEN
+                    CONCAT('[', h.old_level, '] ',
+                           CASE WHEN lang = 'ru' THEN r_old.name_ru ELSE r_old.name_en END,
+                           ' ', r_old.kaomoji)
+                ELSE NULL
+            END AS old_rank,
+            CASE
+                WHEN h.new_level IS NOT NULL THEN
+                    CONCAT('[', h.new_level, '] ',
+                           CASE WHEN lang = 'ru' THEN r_new.name_ru ELSE r_new.name_en END,
+                           ' ', r_new.kaomoji)
+                ELSE NULL
+            END AS new_rank
+        FROM history h
+        JOIN player p ON p.id = h.player_id
+        LEFT JOIN `rank` r_old ON r_old.level = h.old_level
+        LEFT JOIN `rank` r_new ON r_new.level = h.new_level
+        WHERE h.player_id = target_id
+        ORDER BY h.id DESC
+        LIMIT poffset, plimit;
+    ELSE
+        SELECT
+            h.reg_datetime,
+            p.id,
+            CASE
+              WHEN display_type = 'ip' THEN get_last_ip4(p.id)
+              WHEN display_type = 'steamid' THEN get_last_steamid2(p.id)
+              ELSE get_last_name(p.id)
+            END AS identity,
+            CASE WHEN is_unicode = 1
+                THEN p.stars_unicode
+                ELSE p.stars_compat
+            END AS stars,
+            CASE
+                WHEN h.old_level IS NOT NULL THEN
+                    CONCAT('[', h.old_level, '] ',
+                           CASE WHEN lang = 'ru' THEN r_old.name_ru ELSE r_old.name_en END,
+                           ' ', r_old.kaomoji)
+                ELSE NULL
+            END AS old_rank,
+            CASE
+                WHEN h.new_level IS NOT NULL THEN
+                    CONCAT('[', h.new_level, '] ',
+                           CASE WHEN lang = 'ru' THEN r_new.name_ru ELSE r_new.name_en END,
+                           ' ', r_new.kaomoji)
+                ELSE NULL
+            END AS new_rank
+        FROM history h
+        JOIN player p ON p.id = h.player_id
+        LEFT JOIN `rank` r_old ON r_old.level = h.old_level
+        LEFT JOIN `rank` r_new ON r_new.level = h.new_level
+        ORDER BY h.id DESC
+        LIMIT poffset, plimit;
+    END IF;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `PlayerById` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `PlayerById`(
+    IN display_type VARCHAR(7),               -- 'nick', 'ip', 'steamid'
+    IN target_id INT UNSIGNED,
+    IN lang VARCHAR(5),
+    IN is_unicode TINYINT UNSIGNED
+)
+    READS SQL DATA
+BEGIN
+    IF target_id IS NOT NULL THEN
+        SELECT
+            (SELECT COUNT(*) + 1 FROM player p2 
+             WHERE (p2.level, p2.time_secs, p2.id) > (p.level, p.time_secs, p.id)
+            ) AS place,
+            p.id,
+            CASE
+              WHEN display_type = 'ip' THEN get_last_ip4(p.id)
+              WHEN display_type = 'steamid' THEN get_last_steamid2(p.id)
+              ELSE get_last_name(p.id)
+            END AS identity,
+            p.kills,
+            p.deaths,
+            build_human_time(p.time_secs, lang) AS gaming_time,
+            CASE WHEN is_unicode = 1
+              THEN p.stars_unicode
+              ELSE p.stars_compat
+            END AS stars,
+            p.level,
+            CASE WHEN lang = 'ru'
+              THEN r.name_ru
+              ELSE r.name_en
+            END AS rank_name,
+            r.kaomoji,
+            p.lastseen_datetime,
+            p.last_server_name
+        FROM player p
+        LEFT JOIN `rank` r ON p.level = r.level
+        WHERE p.id = target_id;
+    END IF;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -647,22 +1083,47 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` PROCEDURE `PlayerByIp`(ip int unsigned, ranks_total int unsigned, lang varchar(5))
+CREATE DEFINER=`root`@`%` PROCEDURE `PlayerByIp`(
+    IN ip VARCHAR(15),
+    IN lang VARCHAR(5),
+    IN is_unicode TINYINT UNSIGNED
+)
+    READS SQL DATA
 BEGIN
-select `player`.*,
-	`build_human_time`(`player`.`time_secs`, lang) AS `gaming_time`,
-    (CASE WHEN lang = 'ru' THEN `rank`.`name_ru`
-		  ELSE `rank`.`name_en`
-    END) AS `rank_name`,
-    `build_stars`(`rank`.`level`, ranks_total) AS `stars`,
-		`rank`.`kaomoji` as kaomoji
-from `player`
-join `player_ip` on `player`.`id` = `player_ip`.`player_id`
-left join `rank` ON `player`.`rank_id` = `rank`.`id`
-where `player_ip`.`ip` = ip
-order by `player_ip`.`reg_datetime` desc
-limit 1
-;
+    DECLARE target_id INT UNSIGNED DEFAULT NULL;
+    SELECT p.id INTO target_id
+    FROM player p
+    JOIN player_ip pip ON p.id = pip.player_id
+    WHERE pip.ip = INET_ATON(ip)
+    ORDER BY pip.reg_datetime DESC, pip.id DESC
+    LIMIT 1;
+
+    IF target_id IS NOT NULL THEN
+        SELECT
+            (SELECT COUNT(*) + 1 FROM player p2 
+             WHERE (p2.level, p2.time_secs, p2.id) > (p.level, p.time_secs, p.id)
+            ) AS place,
+            p.id,
+            ip,
+            p.kills,
+            p.deaths,
+            build_human_time(p.time_secs, lang) AS gaming_time,
+            CASE WHEN is_unicode = 1
+              THEN p.stars_unicode
+              ELSE p.stars_compat
+            END AS stars,
+            p.level,
+            CASE WHEN lang = 'ru'
+              THEN r.name_ru
+              ELSE r.name_en
+            END AS rank_name,
+            r.kaomoji,
+            p.lastseen_datetime,
+            p.last_server_name
+        FROM player p
+        LEFT JOIN `rank` r ON p.level = r.level
+        WHERE p.id = target_id;
+    END IF;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -679,22 +1140,47 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` PROCEDURE `PlayerByName`(name varchar(31), ranks_total int unsigned, lang varchar(5))
+CREATE DEFINER=`root`@`%` PROCEDURE `PlayerByName`(
+    IN name VARCHAR(31),
+    IN lang VARCHAR(5),
+    IN is_unicode TINYINT UNSIGNED
+)
+    READS SQL DATA
 BEGIN
-select `player`.*,
-	`build_human_time`(`player`.`time_secs`, lang) AS `gaming_time`,
-    (CASE WHEN lang = 'ru' THEN `rank`.`name_ru`
-		  ELSE `rank`.`name_en`
-    END) AS `rank_name`,
-    `build_stars`(`rank`.`level`, ranks_total) AS `stars`,
-		`rank`.`kaomoji` as kaomoji
-from `player`
-join `player_name` on `player`.`id` = `player_name`.`player_id`
-left join `rank` ON `player`.`rank_id` = `rank`.`id`
-where `player_name`.`name` = name
-order by `player_name`.`reg_datetime` desc
-limit 1
-;
+    DECLARE target_id INT UNSIGNED DEFAULT NULL;
+    SELECT p.id INTO target_id
+    FROM player p
+    JOIN player_name pn ON p.id = pn.player_id
+    WHERE pn.name = name
+    ORDER BY pn.reg_datetime DESC, pn.id DESC
+    LIMIT 1;
+
+    IF target_id IS NOT NULL THEN
+        SELECT
+            (SELECT COUNT(*) + 1 FROM player p2 
+             WHERE (p2.level, p2.time_secs, p2.id) > (p.level, p.time_secs, p.id)
+            ) AS place,
+            p.id,
+            name,
+            p.kills,
+            p.deaths,
+            build_human_time(p.time_secs, lang) AS gaming_time,
+            CASE WHEN is_unicode = 1
+              THEN p.stars_unicode
+              ELSE p.stars_compat
+            END AS stars,
+            p.level,
+            CASE WHEN lang = 'ru'
+              THEN r.name_ru
+              ELSE r.name_en
+            END AS rank_name,
+            r.kaomoji,
+            p.lastseen_datetime,
+            p.last_server_name
+        FROM player p
+        LEFT JOIN `rank` r ON p.level = r.level
+        WHERE p.id = target_id;
+    END IF;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -711,9 +1197,10 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` PROCEDURE `PlayerBySteamId2`(steamId2 varchar(20), ranks_total int unsigned, lang varchar(5))
+CREATE DEFINER=`root`@`%` PROCEDURE `PlayerBySteamId2`(IN steamId2 varchar(22), IN lang varchar(5), IN is_unicode tinyint unsigned)
+    READS SQL DATA
 BEGIN
-call PlayerBySteamId64(cast(SUBSTR(steamId2,1,1) as DECIMAL) + ((cast(SUBSTR(steamId2,3) as DECIMAL) * 2 + 76561197960265728)), ranks_total, lang);
+call PlayerBySteamId64(convert_steamid2_to_steamid64(steamId2), lang, is_unicode);
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -730,22 +1217,51 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` PROCEDURE `PlayerBySteamId64`(steamId64 DECIMAL(17,0), ranks_total int unsigned, lang varchar(5))
+CREATE DEFINER=`root`@`%` PROCEDURE `PlayerBySteamId64`(
+    IN steamId64 DECIMAL(17,0),
+    IN lang VARCHAR(5),
+    IN is_unicode TINYINT UNSIGNED
+)
+    READS SQL DATA
 BEGIN
-select `player`.*,
-	`build_human_time`(`player`.`time_secs`, lang) AS `gaming_time`,
-    (CASE WHEN lang = 'ru' THEN `rank`.`name_ru`
-		  ELSE `rank`.`name_en`
-    END) AS `rank_name`,
-    `build_stars`(`rank`.`level`, ranks_total) AS `stars`,
-		`rank`.`kaomoji` as kaomoji
-from `player`
-join `player_steamid` on `player`.`id` = `player_steamid`.`player_id`
-left join `rank` ON `player`.`rank_id` = `rank`.`id`
-where `player_steamid`.`steamid64` = steamId64
-order by `player_steamid`.`reg_datetime` desc
-limit 1
-;
+    DECLARE target_id INT UNSIGNED DEFAULT NULL;
+    DECLARE target_steamid2 VARCHAR(20) DEFAULT NULL;
+    SELECT p.id,
+           ps.steamid2
+    INTO   target_id,
+           target_steamid2
+    FROM player p
+    JOIN player_steamid ps ON p.id = ps.player_id
+    WHERE ps.steamid64 = steamId64
+    ORDER BY ps.reg_datetime DESC, ps.id DESC
+    LIMIT 1;
+
+    IF target_id IS NOT NULL THEN
+        SELECT
+            (SELECT COUNT(*) + 1 FROM player p2 
+             WHERE (p2.level, p2.time_secs, p2.id) > (p.level, p.time_secs, p.id)
+            ) AS place,
+            p.id,
+            target_steamid2 steamid2,
+            p.kills,
+            p.deaths,
+            build_human_time(p.time_secs, lang) AS gaming_time,
+            CASE WHEN is_unicode = 1
+              THEN p.stars_unicode
+              ELSE p.stars_compat
+            END AS stars,
+            p.level,
+            CASE WHEN lang = 'ru'
+              THEN r.name_ru
+              ELSE r.name_en
+            END AS rank_name,
+            r.kaomoji,
+            p.lastseen_datetime,
+            p.last_server_name
+        FROM player p
+        LEFT JOIN `rank` r ON p.level = r.level
+        WHERE p.id = target_id;
+    END IF;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -762,33 +1278,241 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`%` PROCEDURE `Top`(rows_count int unsigned, lang varchar(5))
+CREATE DEFINER=`root`@`%` PROCEDURE `Top`(
+    IN display_type VARCHAR(7),               -- 'nick', 'ip', 'steamid'
+    IN lang VARCHAR(5),
+    IN poffset INT UNSIGNED,
+    IN plimit INT UNSIGNED,
+    IN is_unicode TINYINT UNSIGNED
+)
+    READS SQL DATA
 BEGIN
-with cte as (select player.id, 
-		player.kills,
-		player.deaths,
-		player.rank_id,
-		player.time_secs
-	from player 
-	order by player.`rank_id` desc, player.time_secs desc 
-	limit rows_count),
-cte2 as (select 
-		distinct player_name.player_id,
-		first_value(player_name.name) over(w order by player_name.reg_datetime desc, player_name.id desc) name
-	from player_name join cte on cte.id = player_name.player_id
-	window w as (partition by player_name.player_id))
-select 
-	cte2.name, 
-	cte.kills,
-	cte.deaths,
-	`build_human_time`(`cte`.`time_secs`, lang) AS `gaming_time`,
-	(CASE WHEN lang = 'ru' THEN `rank`.`name_ru`
-		  ELSE `rank`.`name_en`
-    END) AS `rank_name`,
-  `build_stars2`(`rank`.`level`, (select count(*) from `rank`)) AS `stars`,
-	`rank`.`kaomoji` as kaomoji
-from cte join cte2 on cte.id = cte2.player_id
-join `rank` on `rank`.id = cte.rank_id;
+/* Use TopCursor for higher poffset */
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY t.level DESC, t.time_secs DESC, t.id DESC) + poffset AS `place`,
+        t.id,
+        t.identity,
+        t.kills,
+        t.deaths,
+        t.time_secs,
+        t.gaming_time,
+        t.stars,
+        t.level,
+        t.rank_name,
+        t.kaomoji
+    FROM (
+        SELECT
+            p.id,
+            CASE
+              WHEN display_type = 'ip' THEN get_last_ip4(p.id)
+              WHEN display_type = 'steamid' THEN get_last_steamid2(p.id)
+              ELSE get_last_name(p.id)
+            END AS identity,
+            p.kills,
+            p.deaths,
+            p.time_secs,
+            build_human_time(p.time_secs, lang) AS gaming_time,
+            CASE WHEN is_unicode = 1
+              THEN p.stars_unicode
+              ELSE p.stars_compat
+            END AS stars,
+            p.level,
+            CASE 
+              WHEN lang = 'ru' THEN r.name_ru
+              ELSE r.name_en
+            END AS rank_name,
+            r.kaomoji
+        FROM player p
+        INNER JOIN `rank` r ON r.level = p.level
+        ORDER BY p.level DESC, p.time_secs DESC, p.id DESC
+        LIMIT poffset, plimit
+    ) t;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `TopCursor` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `TopCursor`(
+    IN display_type VARCHAR(7),               -- 'nick', 'ip', 'steamid'
+    IN lang VARCHAR(5),
+    IN last_level INT UNSIGNED,      -- NULL для первой страницы
+    IN last_time_secs INT UNSIGNED,
+    IN last_id INT UNSIGNED,
+    IN cursor_direction VARCHAR(4),  -- 'next' или 'prev'
+    IN plimit INT UNSIGNED,
+    IN is_unicode TINYINT UNSIGNED
+)
+    READS SQL DATA
+BEGIN
+    DECLARE v_limit INT DEFAULT plimit + 1;
+    IF cursor_direction IS NULL OR cursor_direction NOT IN ('next','prev') THEN
+        SET cursor_direction = 'next';
+    END IF;
+    
+    IF last_level IS NULL THEN
+        -- Первая страница
+        SELECT
+            (SELECT COUNT(*) + 1 FROM player p2 
+             WHERE (p2.level, p2.time_secs, p2.id) > (t.level, t.time_secs, t.id)
+            ) AS place,
+            t.id,
+            t.identity,
+            t.kills,
+            t.deaths,
+            t.time_secs,
+            t.gaming_time,
+            t.stars,
+            t.level,
+            t.rank_name,
+            t.kaomoji
+        FROM (
+            SELECT
+                p.id,
+                CASE
+                  WHEN display_type = 'ip' THEN get_last_ip4(p.id)
+                  WHEN display_type = 'steamid' THEN get_last_steamid2(p.id)
+                  ELSE get_last_name(p.id)
+                END AS identity,
+                p.kills,
+                p.deaths,
+                p.time_secs,
+                build_human_time(p.time_secs, lang) AS gaming_time,
+                CASE WHEN is_unicode = 1
+                  THEN p.stars_unicode
+                  ELSE p.stars_compat
+                END AS stars,
+                p.level,
+                CASE WHEN lang = 'ru'
+                  THEN r.name_ru
+                  ELSE r.name_en END
+                AS rank_name,
+                r.kaomoji
+            FROM player p
+            INNER JOIN `rank` r ON r.level = p.level
+            ORDER BY p.level DESC, p.time_secs DESC, p.id DESC
+            LIMIT plimit
+        ) t;
+
+    ELSEIF cursor_direction = 'next' THEN
+        -- Следующая страница: ищем слабее последней строки
+        SELECT
+            (SELECT COUNT(*) + 1 FROM player p2 
+             WHERE (p2.level, p2.time_secs, p2.id) > (t.level, t.time_secs, t.id)
+            ) AS place,
+            t.id,
+            t.identity,
+            t.kills,
+            t.deaths,
+            t.time_secs,
+            t.gaming_time,
+            t.stars,
+            t.level,
+            t.rank_name,
+            t.kaomoji,
+            (SELECT COUNT(*) FROM (
+              SELECT 1
+              FROM player p3
+              JOIN `rank` r3 ON r3.level = p3.level
+              WHERE (p3.level, p3.time_secs, p3.id) < (last_level, last_time_secs, last_id)
+              ORDER BY p3.level DESC, p3.time_secs DESC, p3.id DESC
+              LIMIT v_limit
+            ) AS _chk) > plimit AS has_more_next
+        FROM (
+            SELECT
+                p.id,
+                CASE
+                  WHEN display_type = 'ip' THEN get_last_ip4(p.id)
+                  WHEN display_type = 'steamid' THEN get_last_steamid2(p.id)
+                  ELSE get_last_name(p.id)
+                END AS identity,
+                p.kills,
+                p.deaths,
+                p.time_secs,
+                build_human_time(p.time_secs, lang) AS gaming_time,
+                CASE WHEN is_unicode = 1
+                  THEN p.stars_unicode
+                  ELSE p.stars_compat
+                END AS stars,
+                p.level,
+                CASE WHEN lang = 'ru'
+                  THEN r.name_ru
+                  ELSE r.name_en
+                END AS rank_name,
+                r.kaomoji
+            FROM player p
+            INNER JOIN `rank` r ON r.level = p.level
+            WHERE (p.level, p.time_secs, p.id) < (last_level, last_time_secs, last_id)
+            ORDER BY p.level DESC, p.time_secs DESC, p.id DESC
+            LIMIT v_limit          -- ← берём на 1 больше
+        ) t
+        ORDER BY t.level DESC, t.time_secs DESC, t.id DESC
+        LIMIT plimit;                -- ← возвращаем ровно plimit;
+    ELSEIF cursor_direction = 'prev' THEN
+        -- Предыдущая страница: ищем сильнее первой строки → обратная сортировка + реверс
+        SELECT
+            (SELECT COUNT(*) + 1 FROM player p2 
+             WHERE (p2.level, p2.time_secs, p2.id) > (t.level, t.time_secs, t.id)
+            ) AS place,
+            t.id,
+            t.identity,
+            t.kills,
+            t.deaths,
+            t.time_secs,
+            t.gaming_time,
+            t.stars,
+            t.level,
+            t.rank_name,
+            t.kaomoji,
+            (SELECT COUNT(*) FROM (
+                SELECT 1
+                FROM player p3
+                JOIN `rank` r3 ON r3.level = p3.level
+                WHERE (p3.level, p3.time_secs, p3.id) > (last_level, last_time_secs, last_id)
+                ORDER BY p3.level ASC, p3.time_secs ASC, p3.id ASC
+                LIMIT v_limit
+            ) AS _chk) > plimit AS has_more_prev
+        FROM (
+            SELECT
+                p.id,
+                CASE
+                  WHEN display_type = 'ip' THEN get_last_ip4(p.id)
+                  WHEN display_type = 'steamid' THEN get_last_steamid2(p.id)
+                  ELSE get_last_name(p.id)
+                END AS identity,
+                p.kills,
+                p.deaths,
+                p.time_secs,
+                build_human_time(p.time_secs, lang) AS gaming_time,
+                CASE WHEN is_unicode = 1
+                  THEN p.stars_unicode
+                  ELSE p.stars_compat
+                END AS stars,
+                p.level,
+                CASE WHEN lang = 'ru'
+                  THEN r.name_ru
+                  ELSE r.name_en
+                END AS rank_name,
+                r.kaomoji
+            FROM player p
+            INNER JOIN `rank` r ON r.level = p.level
+            WHERE (p.level, p.time_secs, p.id) > (last_level, last_time_secs, last_id)
+            ORDER BY p.level ASC, p.time_secs ASC, p.id ASC
+            LIMIT v_limit -- ← берём на 1 больше
+        ) t
+        ORDER BY t.level DESC, t.time_secs DESC, t.id DESC -- восстанавливаем порядок
+        LIMIT plimit; -- ← отсекаем последнюю (лишнюю) строку
+    END IF;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -805,4 +1529,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-10-04 14:56:28
+-- Dump completed on 2025-11-11 11:11:11

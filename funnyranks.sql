@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.21, for Win64 (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.31, for Win64 (x86_64)
 --
 -- Host: localhost    Database: funnyranks
 -- ------------------------------------------------------
--- Server version	8.0.21
+-- Server version	8.0.31
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -33,6 +33,18 @@ CREATE TABLE `broker` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Dumping data for table `broker`
+--
+
+LOCK TABLES `broker` WRITE;
+/*!40000 ALTER TABLE `broker` DISABLE KEYS */;
+set autocommit=0;
+INSERT INTO `broker` VALUES (1,'broker_1',NULL,'2021-08-01 00:00:00');
+/*!40000 ALTER TABLE `broker` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
+
+--
 -- Table structure for table `driver_property`
 --
 
@@ -47,8 +59,19 @@ CREATE TABLE `driver_property` (
   PRIMARY KEY (`id`),
   KEY `driver_property_project_id_idx` (`project_id`),
   CONSTRAINT `driver_property_project_id_fk` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Additional JDBC driver connection properties https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-configuration-properties.html';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Additional JDBC driver connection properties https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `driver_property`
+--
+
+LOCK TABLES `driver_property` WRITE;
+/*!40000 ALTER TABLE `driver_property` DISABLE KEYS */;
+set autocommit=0;
+/*!40000 ALTER TABLE `driver_property` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `game`
@@ -62,7 +85,7 @@ CREATE TABLE `game` (
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `listener_port` smallint unsigned NOT NULL COMMENT 'UDP port for consuming game server logs',
   PRIMARY KEY (`app_id`),
-  UNIQUE KEY `game_listener_port_UNIQUE` (`listener_port`)
+  UNIQUE KEY `game_listener_port_UNIQUE` (`listener_port`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -112,41 +135,6 @@ UNLOCK TABLES;
 commit;
 
 --
--- Table structure for table `maxmind_db_state`
---
-
-DROP TABLE IF EXISTS `maxmind_db_state`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `maxmind_db_state` (
-  `date` date DEFAULT NULL,
-  `size` int unsigned DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Leave or remove a link for enable/disable auto-updating GeoLite2 country database:\r\nhttps://github.com/mbto/public_keeper/raw/master/funnyranks/country_en_ru.zip';
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
-/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
-/*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8mb4 */ ;
-/*!50003 SET character_set_results = utf8mb4 */ ;
-/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
-/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
-/*!50032 DROP TRIGGER IF EXISTS maxmind_db_state_BEFORE_INSERT */;
-DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `maxmind_db_state_BEFORE_INSERT` BEFORE INSERT ON `maxmind_db_state` FOR EACH ROW BEGIN
-	declare error_msg text;
-    if(SELECT EXISTS (SELECT 1 FROM `maxmind_db_state`)) then
-		set error_msg = concat('Unable to insert more one record to maxmind_db_state');
-		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
-    end if;
-END */;;
-DELIMITER ;
-/*!50003 SET sql_mode              = @saved_sql_mode */ ;
-/*!50003 SET character_set_client  = @saved_cs_client */ ;
-/*!50003 SET character_set_results = @saved_cs_results */ ;
-/*!50003 SET collation_connection  = @saved_col_connection */ ;
-
---
 -- Table structure for table `port`
 --
 
@@ -163,9 +151,9 @@ CREATE TABLE `port` (
   `active` tinyint unsigned NOT NULL DEFAULT '0' COMMENT 'Should receive packets from this port?: 1-receive; 0-UDP packets from this port will be ignored',
   `ffa` tinyint unsigned NOT NULL DEFAULT '0' COMMENT 'game server is FREE-FOR-ALL mode (Example: CS-DeathMatch): 1-true; 0-false',
   `ignore_bots` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '1-ignore statistics, when killer or victim is BOT; 0-don''t ignore (include all player''s)',
-  `start_session_on_action` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '1-start player''s session on event "... killed ... with ..." (not for kreedz servers); 0-start player''s session on event "... connected, address ..." or "... entered the game"',
+  `start_session_on_action` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '1-start player''s session on event "... killed ... with ..." (not for kreedz servers); 0-start player''s session on event "... entered the game"',
   PRIMARY KEY (`id`),
-  KEY `port_broker_id_idx` (`broker_id`),
+  UNIQUE KEY `port_broker_id_value_uniq_idx` (`broker_id`,`value`) USING BTREE,
   KEY `port_value_idx` (`value`),
   KEY `port_project_id_idx` (`project_id`),
   KEY `port_game_app_id_idx` (`game_app_id`),
@@ -174,63 +162,17 @@ CREATE TABLE `port` (
   CONSTRAINT `port_project_id_fk` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
-/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
-/*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8mb4 */ ;
-/*!50003 SET character_set_results = utf8mb4 */ ;
-/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
-/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
-/*!50032 DROP TRIGGER IF EXISTS port_BEFORE_INSERT */;
-DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `port_BEFORE_INSERT` BEFORE INSERT ON `port` FOR EACH ROW BEGIN
-	declare error_msg text;
-    declare existed_id int unsigned;
-    
-    select id into existed_id from `port` 
-		where broker_id = NEW.broker_id
-        and `value` = NEW.`value` limit 1;
-    
-	if(existed_id is not null) then
-		set error_msg = concat('Unable to insert value=', NEW.`value`, ' to port, due already existed at broker_id=', NEW.broker_id, ', id=', existed_id);
-		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
-	end if;
-END */;;
-DELIMITER ;
-/*!50003 SET sql_mode              = @saved_sql_mode */ ;
-/*!50003 SET character_set_client  = @saved_cs_client */ ;
-/*!50003 SET character_set_results = @saved_cs_results */ ;
-/*!50003 SET collation_connection  = @saved_col_connection */ ;
-/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
-/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
-/*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8mb4 */ ;
-/*!50003 SET character_set_results = utf8mb4 */ ;
-/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
-/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
-/*!50032 DROP TRIGGER IF EXISTS port_BEFORE_UPDATE */;
-DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `port_BEFORE_UPDATE` BEFORE UPDATE ON `port` FOR EACH ROW BEGIN
-	declare error_msg text;
-    declare existed_id int unsigned;
-    
-    select id into existed_id from `port` 
-		where broker_id = NEW.broker_id
-        and `value` = NEW.`value`
-        and id != OLD.id limit 1;
-    
-	if(existed_id is not null) then
-		set error_msg = concat('Unable to update port from ', OLD.`value`, ' to ', NEW.`value`, ', due already existed at broker_id=', NEW.broker_id, ', id=', existed_id);
-		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = error_msg;
-	end if;
-END */;;
-DELIMITER ;
-/*!50003 SET sql_mode              = @saved_sql_mode */ ;
-/*!50003 SET character_set_client  = @saved_cs_client */ ;
-/*!50003 SET character_set_results = @saved_cs_results */ ;
-/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Dumping data for table `port`
+--
+
+LOCK TABLES `port` WRITE;
+/*!40000 ALTER TABLE `port` DISABLE KEYS */;
+set autocommit=0;
+/*!40000 ALTER TABLE `port` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `project`
@@ -243,7 +185,7 @@ CREATE TABLE `project` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `language` enum('en','ru') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'en' COMMENT 'Language affects to country name in player_ip table (from MaxMind GeoLite2 database)',
+  `language` enum('en','ru') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'en' COMMENT 'Language affects to country/city names from MaxMind GeoLite2 database',
   `merge_type` enum('Nick','IP','Steam ID') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Nick',
   `reg_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `database_hostport` varchar(260) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -254,6 +196,21 @@ CREATE TABLE `project` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `project`
+--
+
+LOCK TABLES `project` WRITE;
+/*!40000 ALTER TABLE `project` DISABLE KEYS */;
+set autocommit=0;
+/*!40000 ALTER TABLE `project` ENABLE KEYS */;
+UNLOCK TABLES;
+commit;
+
+--
+-- Dumping events for database 'funnyranks'
+--
 
 --
 -- Dumping routines for database 'funnyranks'
@@ -268,4 +225,4 @@ CREATE TABLE `project` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2021-08-01 00:00:00
+-- Dump completed on 2025-11-11  11:11:11
