@@ -510,19 +510,19 @@ BEGIN
 
 PTS_PER_LVL = 1.25 – цена уровня (меньше = быстрее)
 TIME_WEIGHT = 0.95 – 95 % очков даёт время (kreedz-friendly)
-MAX_TIME_PTS = 75 – потолок выше фактических 57.6 LN-ед.
+MAX_TIME_PTS = 75 – потолок выше фактических 72 LN-ед.
 PTS_PER_HOUR = 0.12 – 0.12 LN-ед./час (600 ч = 72 LN-ед.)
-    
+
 Параметр               Эффект                  Пример изменения
 --------------------   ---------------------   -------------------------
-PTS_PER_LVL ↑          Медленнее               1.0 → 2.0  (в 2 раза дольше)
-PTS_PER_LVL ↓          Быстрее                 1.0 → 0.5  (в 2 раза быстрее)
+PTS_PER_LVL ↑          Медленнее               1.25 → 2.5  (в 2 раза дольше)
+PTS_PER_LVL ↓          Быстрее                 1.25 → 0.62 (в 2 раза быстрее)
 
-TIME_WEIGHT ↑          Время важнее            0.6 → 0.95 (kreedz-игрок растёт быстрее)
-TIME_WEIGHT ↓          K/D важнее              0.6 → 0.3  (фраги важнее времени)
+TIME_WEIGHT ↑          Время важнее            0.7 → 0.95 (kreedz-игрок растёт быстрее)
+TIME_WEIGHT ↓          K/D важнее              0.95 → 0.5  (фраги важнее времени)
 
-MAX_TIME_PTS ↑         Выше потолок по времени 40 → 80  (можно «качаться» дольше)
-MAX_TIME_PTS ↓         Ниже потолок            40 → 20  (время быстро перестаёт помогать)
+MAX_TIME_PTS ↑         Выше потолок по времени 60 → 90  (можно «качаться» дольше)
+MAX_TIME_PTS ↓         Ниже потолок            75 → 50  (время быстро перестаёт помогать)
 
 PTS_PER_HOUR ↑         Больше очков за час     0.12 → 0.24 (каждый час в 2 раза ценнее)
 PTS_PER_HOUR ↓         Меньше очков за час     0.12 → 0.06 (в 2 раза медленнее)
@@ -531,7 +531,7 @@ PTS_PER_HOUR ↓         Меньше очков за час     0.12 → 0.06 (
     DECLARE MIN_TIME_SEC  INT    DEFAULT 3*3600;
     DECLARE MIN_KD        DOUBLE DEFAULT 0.30;
     DECLARE TIME_WEIGHT   DOUBLE DEFAULT 0.95;   -- 95 % время
-    DECLARE MAX_TIME_PTS  DOUBLE DEFAULT 75;   -- потолок выше 68.5
+    DECLARE MAX_TIME_PTS  DOUBLE DEFAULT 75;   -- потолок выше 72 LN-ед.
     DECLARE PTS_PER_HOUR  DOUBLE DEFAULT 0.12; -- 0.12 LN-ед./час
 
     DECLARE skill_pts DOUBLE DEFAULT 0;
