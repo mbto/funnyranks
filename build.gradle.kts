@@ -35,12 +35,12 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
-    implementation("org.springframework.boot:spring-boot-starter-cache")
+//    implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
     implementation("jakarta.xml.bind:jakarta.xml.bind-api")
     implementation("com.sun.xml.bind:jaxb-impl:4.0.6")
-    implementation("com.github.ben-manes.caffeine:caffeine")
+//    implementation("com.github.ben-manes.caffeine:caffeine")
 
     implementation("org.jooq:jooq")
     implementation("com.mysql:mysql-connector-j")
