@@ -1344,12 +1344,16 @@ DELIMITER ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`%` PROCEDURE `TopCursor`(
-    IN display_type VARCHAR(7),               -- 'nick', 'ip', 'steamid'
+    IN display_type VARCHAR(7), -- 'nick', 'ip', 'steamid'
     IN lang VARCHAR(5),
-    IN last_level INT UNSIGNED,      -- NULL для первой страницы
-    IN last_time_secs INT UNSIGNED,
-    IN last_id INT UNSIGNED,
-    IN cursor_direction VARCHAR(4),  -- 'next' или 'prev'
+    IN last_level INT UNSIGNED, -- NULL для первой страницы
+    IN last_time_secs INT UNSIGNED, -- NULL для первой страницы
+    IN last_id INT UNSIGNED, -- NULL для первой страницы
+/*
+для 'next' - last_ заполнять данными с последней строки
+для 'prev' - last_ заполнять данными с первой строки
+*/
+    IN cursor_direction VARCHAR(4), -- 'next' или 'prev'
     IN plimit INT UNSIGNED,
     IN is_unicode TINYINT UNSIGNED
 )
@@ -1375,7 +1379,15 @@ BEGIN
             t.stars,
             t.level,
             t.rank_name,
-            t.kaomoji
+            t.kaomoji,
+            (SELECT COUNT(*) > plimit
+             FROM (
+                   SELECT 1
+                   FROM player p3
+                   JOIN `rank` r3 ON r3.level = p3.level
+                   ORDER BY p3.level DESC, p3.time_secs DESC, p3.id DESC
+                   LIMIT v_limit
+             ) AS _chk) AS has_more_next
         FROM (
             SELECT
                 p.id,
@@ -1454,10 +1466,10 @@ BEGIN
             INNER JOIN `rank` r ON r.level = p.level
             WHERE (p.level, p.time_secs, p.id) < (last_level, last_time_secs, last_id)
             ORDER BY p.level DESC, p.time_secs DESC, p.id DESC
-            LIMIT v_limit          -- ← берём на 1 больше
+            LIMIT plimit
         ) t
-        ORDER BY t.level DESC, t.time_secs DESC, t.id DESC
-        LIMIT plimit;                -- ← возвращаем ровно plimit;
+--         ORDER BY t.level DESC, t.time_secs DESC, t.id DESC
+        ;
     ELSEIF cursor_direction = 'prev' THEN
         -- Предыдущая страница: ищем сильнее первой строки → обратная сортировка + реверс
         SELECT
@@ -1508,10 +1520,10 @@ BEGIN
             INNER JOIN `rank` r ON r.level = p.level
             WHERE (p.level, p.time_secs, p.id) > (last_level, last_time_secs, last_id)
             ORDER BY p.level ASC, p.time_secs ASC, p.id ASC
-            LIMIT v_limit -- ← берём на 1 больше
+            LIMIT plimit
         ) t
         ORDER BY t.level DESC, t.time_secs DESC, t.id DESC -- восстанавливаем порядок
-        LIMIT plimit; -- ← отсекаем последнюю (лишнюю) строку
+        ;
     END IF;
 END ;;
 DELIMITER ;
