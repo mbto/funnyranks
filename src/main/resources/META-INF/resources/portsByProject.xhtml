@@ -65,7 +65,7 @@
                 href="/identities?port=#{row.pojo.value}" target="_blank" rendered="#{not empty row.pojo.value}"/>
     </p:column>
 
-    <p:column headerText="Game" width="350">
+    <p:column headerText="Game" width="250">
         <p:cellEditor>
             <f:facet name="output">
                 <h:outputText value="#{viewPortsByProjectId.gameByAppId.get(row.pojo.gameAppId).name}[#{row.pojo.gameAppId}]" rendered="#{not empty row.pojo.gameAppId}"/>
@@ -82,7 +82,7 @@
         </p:cellEditor>
     </p:column>
 
-    <p:column headerText="Name" width="400">
+    <p:column headerText="Name" width="350">
         <p:cellEditor>
             <f:facet name="output">
                 <h:outputText value="#{row.pojo.name}[#{row.pojo.id}]" rendered="#{not empty row.primaryKey}"/>
@@ -121,7 +121,7 @@
             <f:facet name="input">
                 <p:selectBooleanButton id="iIgnBots" value="#{row.pojo.ignoreBots}" onLabel="Yes" offLabel="No" required="true"/>
                 <p:tooltip for="iIgnBots" escape="false"
-                           value="Yes: ignore statistics, when killer or victim is BOT&lt;br/&gt;No: don't ignore (include all player's)"/>
+                           value="Yes: ignore bots in statistics&lt;br/&gt;No: don't ignore (include all player's)"/>
             </f:facet>
         </p:cellEditor>
     </p:column>

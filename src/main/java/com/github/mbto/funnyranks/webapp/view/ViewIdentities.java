@@ -51,8 +51,6 @@ public class ViewIdentities {
     private FunnyRanksDao funnyRanksDao;
     @Autowired
     private EventService eventService;
-    @Autowired
-    private MaxMindDbService maxMindDbService;
 
     @Getter
     @Setter
@@ -117,7 +115,6 @@ public class ViewIdentities {
                 .sum();
 
         Map<Identity, List<ArchivedSessionView>> archivedSessionViewsByIdentity = buildIdentitiesContainer(selectedPortData, storageByName, true, false);
-        maxMindDbService.fillSessionByIdentityContainerWithGeoInfos(selectedPortData, archivedSessionViewsByIdentity);
 
         identitiesCount = archivedSessionViewsByIdentity.size();
         identitiesView = archivedSessionViewsByIdentity

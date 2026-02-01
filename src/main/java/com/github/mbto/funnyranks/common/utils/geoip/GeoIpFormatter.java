@@ -17,7 +17,8 @@ import java.util.stream.Stream;
 
 public class GeoIpFormatter {
     public static GeoInfo buildGeoInfoByIp(DatabaseReader dbReader,
-                                           UInteger uniqueIp) throws Exception {
+                                           UInteger uniqueIp,
+                                           boolean isGameBrowser) throws Exception {
         InetAddress address = ipToInetAddress(uniqueIp.longValue());
         CityResponse cr = dbReader.city(address);
 
@@ -32,13 +33,16 @@ public class GeoIpFormatter {
         String continentRu = safeGet(continent.getNames(), "ru");
         String continentEn = safeGet(continent.getNames(), "en");
         String countryIso = country.getIsoCode();
-        String countryEmoji = getEmojiByCountryIsoCode(countryIso);
+        String countryEmoji = null;
+        if(!isGameBrowser) {
+            countryEmoji = getEmojiByCountryIsoCode(countryIso);
+        }
         String countryRu = safeGet(country.getNames(), "ru");
-        if(countryRu != null) {
+        if(!isGameBrowser && countryRu != null) {
             countryRu = countryEmoji + " " + countryRu;
         }
         String countryEn = safeGet(country.getNames(), "en");
-        if(countryEn != null) {
+        if(!isGameBrowser && countryEn != null) {
             countryEn = countryEmoji + " " + countryEn;
         }
         String cityRu = safeGet(city.getNames(), "ru");
@@ -64,7 +68,7 @@ public class GeoIpFormatter {
         );
     }
 
-    private static String safeGet(java.util.Map<String, String> names, String lang) {
+    private static String safeGet(Map<String, String> names, String lang) {
         if (names == null) return null;
         String val = names.get(lang);
         return (val != null && !val.isEmpty()) ? val : null;
@@ -128,10 +132,14 @@ public class GeoIpFormatter {
     }
 
     private static final Map<String, String> emojiByCountryIsoCode;
+    private static final String defaultEmoji = "🏳️";
 
-	public static String getEmojiByCountryIsoCode(String countryIsoCode) {
-		return emojiByCountryIsoCode.getOrDefault(countryIsoCode, "🏳️");
-	}
+    public static String getEmojiByCountryIsoCode(String countryIsoCode) {
+        if(countryIsoCode == null) {
+            return defaultEmoji;
+        }
+        return emojiByCountryIsoCode.getOrDefault(countryIsoCode, defaultEmoji);
+    }
 
     static {
         final String[][] countryIsoCodeWithEmoji = new String[][] {

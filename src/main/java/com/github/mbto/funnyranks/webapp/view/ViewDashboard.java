@@ -2,10 +2,13 @@ package com.github.mbto.funnyranks.webapp.view;
 
 import com.github.mbto.funnyranks.common.dto.FunnyRanksManager;
 import com.github.mbto.funnyranks.common.dto.PortData;
+import com.github.mbto.funnyranks.common.dto.session.IpWrapper;
+import com.github.mbto.funnyranks.common.dto.session.Session;
 import com.github.mbto.funnyranks.common.dto.session.Storage;
 import com.github.mbto.funnyranks.common.utils.ProjectUtils;
 import com.github.mbto.funnyranks.service.BrokerHolder;
 import com.github.mbto.funnyranks.service.EventService;
+import com.github.mbto.funnyranks.service.MaxMindDbService;
 import com.github.mbto.funnyranks.webapp.DependentUtil;
 import com.github.mbto.funnyranks.webapp.WebUtils;
 import lombok.Getter;
@@ -57,6 +60,8 @@ public class ViewDashboard {
     private List<PortData> sortedPortData;
     @Getter
     private int sessionsCount;
+    @Autowired
+    private MaxMindDbService maxMindDbService;
 
     public void fetch() {
         if (log.isDebugEnabled())
@@ -176,6 +181,16 @@ public class ViewDashboard {
         Map<UShort, PortData> portDataByPortFromSorted = sortedPortData.stream()
                 .collect(Collectors.toMap(portData -> portData.getPort().getValue(), Function.identity()));
         ProjectUtils.fillFakes(portDataByPortFromSorted, playersViewByPort);
+        List<IpWrapper> ipWrappers = new ArrayList<>();
+        for (Map<String, Storage> value : playersViewByPort.values()) {
+            for (Storage storage : value.values()) {
+                Session session = storage.getSession(false);
+                if(session != null) {
+                    ipWrappers.add(session.getIpWrapper());
+                }
+            }
+        }
+        maxMindDbService.fillIpWrappersWithGeoInfos(ipWrappers, false);
         updateSortedPortData();
     }
 }

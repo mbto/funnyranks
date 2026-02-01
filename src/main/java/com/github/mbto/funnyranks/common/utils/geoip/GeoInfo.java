@@ -30,20 +30,19 @@ public final class GeoInfo {
     }
 
     public String locationByProjectLanguage(ProjectLanguage projectLanguage) {
-        StringBuilder sb = new StringBuilder();
         if(projectLanguage == ProjectLanguage.ru) {
-            if(locationRu != null) {
-                sb.append(locationRu);
-            } else if(locationMix != null){
-                sb.append(locationMix);
+            if(locationMix != null) {
+                return locationMix;
+            } else if(locationRu != null){
+                return locationRu;
             }
         } else {
             if(locationEn != null) {
-                sb.append(locationEn);
+                return locationEn;
             } else if(locationMix != null){
-                sb.append(locationMix);
+                return locationMix;
             }
         }
-        return sb.toString();
+        return null;
     }
 }

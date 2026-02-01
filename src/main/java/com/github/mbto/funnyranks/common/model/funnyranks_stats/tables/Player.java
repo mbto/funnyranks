@@ -179,7 +179,7 @@ public class Player extends TableImpl<PlayerRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.PLAYER_TOP_CURSOR_COVER_IDX);
+        return Arrays.asList(Indexes.PLAYER_LASTSEEN_DATETIME_IDX, Indexes.PLAYER_TOP_CURSOR_COVER_IDX);
     }
 
     @Override

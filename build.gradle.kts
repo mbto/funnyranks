@@ -1,5 +1,5 @@
 group = "com.github.mbto.funnyranks"
-version = "1.1"
+version = "1.2"
 
 plugins {
     java

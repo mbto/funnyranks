@@ -27,7 +27,6 @@ import static com.github.mbto.funnyranks.common.utils.ProjectUtils.declension2;
 @Slf4j
 @AllArgsConstructor
 public class SessionsSender {
-    private final MaxMindDbService maxMindDbService;
     private final FunnyRanksStatsDao funnyRanksStatsDao;
 
     @Async("senderTE")
@@ -60,7 +59,6 @@ public class SessionsSender {
             portData.addMessage(logMsg);
             return;
         }
-        maxMindDbService.fillSessionByIdentityContainerWithGeoInfos(portData, archivedSessionViewsByIdentity);
         int identitiesCount = archivedSessionViewsByIdentity.size();
         sessionsCount = archivedSessionViewsByIdentity.values()
                 .stream()

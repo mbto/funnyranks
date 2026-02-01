@@ -179,13 +179,13 @@ style="width:350px;">
     <p:column headerText="Sessions" width="65">
         <h:outputText value="#{viewDashboard.getSessionsCountByPort(portData.port.value)}"/>
     </p:column>
-    <p:column headerText="Game" width="350">
+    <p:column headerText="Game" width="250">
         <h:outputText value="#{portData.game.name}[#{portData.game.appId}]"/>
     </p:column>
-    <p:column headerText="Project" width="400">
+    <p:column headerText="Project" width="300">
         <h:outputText value="#{portData.project.name}[#{portData.project.id}]"/>
     </p:column>
-    <p:column headerText="Name" width="400">
+    <p:column headerText="Name" width="350">
         <h:outputText value="#{portData.port.name}[#{portData.port.id}]"/>
     </p:column>
     <p:column headerText="FFA" width="60">

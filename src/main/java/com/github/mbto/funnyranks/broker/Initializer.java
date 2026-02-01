@@ -2,6 +2,7 @@ package com.github.mbto.funnyranks.broker;
 
 import com.github.mbto.funnyranks.common.dto.session.Storage;
 import com.github.mbto.funnyranks.broker.handlers.MessageHandler;
+import com.github.mbto.funnyranks.service.MaxMindDbService;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.types.UInteger;
 import org.jooq.types.UShort;
@@ -36,6 +37,8 @@ public class Initializer {
     private Distributor distributor;
     @Autowired
     private SessionsSender sessionsSender;
+    @Autowired
+    private MaxMindDbService maxMindDbService;
 
     @PostConstruct
     public void init() throws Throwable {
@@ -52,6 +55,7 @@ public class Initializer {
             // caching components, without applicationContext lookups in com.github.mbto.funnyranks.MessagesConsumer
             messageHandler.setPlayersViewByPort(playersViewByPort);
             messageHandler.setSessionsSender(sessionsSender);
+            messageHandler.setMaxMindDbService(maxMindDbService);
         }
 
         distributor.applyChanges(null);

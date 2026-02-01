@@ -150,7 +150,7 @@ CREATE TABLE `port` (
   `name` varchar(31) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `active` tinyint unsigned NOT NULL DEFAULT '0' COMMENT 'Should receive packets from this port?: 1-receive; 0-UDP packets from this port will be ignored',
   `ffa` tinyint unsigned NOT NULL DEFAULT '0' COMMENT 'game server is FREE-FOR-ALL mode (Example: CS-DeathMatch): 1-true; 0-false',
-  `ignore_bots` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '1-ignore statistics, when killer or victim is BOT; 0-don''t ignore (include all player''s)',
+  `ignore_bots` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '1-ignore bots in statistics; 0-don''t ignore (include all player''s)',
   `start_session_on_action` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '1-start player''s session on event "... killed ... with ..." (not for kreedz servers); 0-start player''s session on event "... entered the game"',
   PRIMARY KEY (`id`),
   UNIQUE KEY `port_broker_id_value_uniq_idx` (`broker_id`,`value`) USING BTREE,
@@ -225,4 +225,4 @@ commit;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-11-11  11:11:11
+-- Dump completed on 2026-02-01  11:11:11

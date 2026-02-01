@@ -107,10 +107,10 @@ public class Port extends TableImpl<PortRecord> {
     public final TableField<PortRecord, Boolean> FFA = createField(DSL.name("ffa"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BOOLEAN)), this, "game server is FREE-FOR-ALL mode (Example: CS-DeathMatch): 1-true; 0-false");
 
     /**
-     * The column <code>funnyranks.port.ignore_bots</code>. 1-ignore statistics,
-     * when killer or victim is BOT; 0-don't ignore (include all player's)
+     * The column <code>funnyranks.port.ignore_bots</code>. 1-ignore bots in
+     * statistics; 0-don't ignore (include all player's)
      */
-    public final TableField<PortRecord, Boolean> IGNORE_BOTS = createField(DSL.name("ignore_bots"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BOOLEAN)), this, "1-ignore statistics, when killer or victim is BOT; 0-don't ignore (include all player's)");
+    public final TableField<PortRecord, Boolean> IGNORE_BOTS = createField(DSL.name("ignore_bots"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BOOLEAN)), this, "1-ignore bots in statistics; 0-don't ignore (include all player's)");
 
     /**
      * The column <code>funnyranks.port.start_session_on_action</code>. 1-start

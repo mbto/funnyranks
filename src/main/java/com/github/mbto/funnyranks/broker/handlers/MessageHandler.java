@@ -4,10 +4,12 @@ import com.github.mbto.funnyranks.broker.SessionsSender;
 import com.github.mbto.funnyranks.common.FlushEvent;
 import com.github.mbto.funnyranks.common.dto.Message;
 import com.github.mbto.funnyranks.common.dto.PortData;
+import com.github.mbto.funnyranks.common.dto.session.IpWrapper;
 import com.github.mbto.funnyranks.common.dto.session.Session;
 import com.github.mbto.funnyranks.common.dto.session.Storage;
 import com.github.mbto.funnyranks.common.dto.session.StorageFetchMode;
 import com.github.mbto.funnyranks.common.model.funnyranks.tables.pojos.Port;
+import com.github.mbto.funnyranks.service.MaxMindDbService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ import static com.github.mbto.funnyranks.common.utils.ProjectUtils.declension2;
 public abstract class MessageHandler {
     private Map<UShort, Map<String, Storage>> playersViewByPort;
     private SessionsSender sessionsSender;
+    private MaxMindDbService maxMindDbService;
 
     /**
      * app_id from `funnyranks`.`game` table
@@ -116,22 +119,26 @@ public abstract class MessageHandler {
                 storageByName.put(newName, storageByName.remove(name));
             } else {
                 Session session = storage.getSession(false);
-                UInteger ip = null;
+                IpWrapper ipWrapper = null;
                 if (session != null) {
                     session.setSteamId64(steamId);
-                    ip = session.getIp();
+                    session.setIsBot(steamId);
+                    ipWrapper = session.getIpWrapper();
                 }
                 storage.onDisconnected(dateTime);
 
                 Storage anotherStorage = allocateStorage(port, newName, null, steamId, dateTime);
                 Session anotherSession = port.getStartSessionOnAction()
                         ? anotherStorage.getSession(true) : anotherStorage.getSession(dateTime);
-                if (ip != null)
-                    anotherSession.setIp(ip);
+                if (ipWrapper != null) {
+                    anotherSession.setIpWrapper(ipWrapper);
+                }
                 return anotherStorage;
             }
         }
-        storage.getSession(true).setSteamId64(steamId);
+        Session session = storage.getSession(true);
+        session.setSteamId64(steamId);
+        session.setIsBot(steamId);
         return storage;
     }
 
@@ -168,20 +175,5 @@ public abstract class MessageHandler {
         }
         // after this call use of registry in aggregateAndMergeAsync onwards may be outdated
         sessionsSender.aggregateAndMergeAsync(portData, storageByNameCopy);
-    }
-    public boolean isAuthBOT(String auth) {
-        return "BOT".equalsIgnoreCase(auth);
-    }
-    /**
-     * L 01/08/2021 - 19:48:23: [REUNION]: HLTV Proxy (127.0.0.1) authorized as HLTV
-     * L 01/08/2021 - 19:48:23: "HLTV Proxy<56><HLTV><>" connected, address "127.0.0.1:27020"
-     * L 01/08/2021 - 19:48:24: "HLTV Proxy<56><HLTV><>" entered the game
-     * L 01/08/2021 - 19:48:24: "HLTV Proxy<56><HLTV><>" joined team "SPECTATOR"
-     * L 01/08/2021 - 19:48:26: "HLTV Proxy<56><HLTV><SPECTATOR>" disconnected
-     * Dropped HLTV Proxy from server
-     * Reason:  Client sent 'drop'
-     */
-    public boolean isAuthHLTV(String auth) {
-        return "HLTV".equalsIgnoreCase(auth);
     }
 }

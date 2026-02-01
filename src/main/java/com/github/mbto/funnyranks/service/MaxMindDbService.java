@@ -1,9 +1,6 @@
 package com.github.mbto.funnyranks.service;
 
-import com.github.mbto.funnyranks.common.dto.PortData;
-import com.github.mbto.funnyranks.common.dto.identity.Identity;
-import com.github.mbto.funnyranks.common.dto.session.ArchivedSessionView;
-import com.github.mbto.funnyranks.common.dto.session.Session;
+import com.github.mbto.funnyranks.common.dto.session.IpWrapper;
 import com.github.mbto.funnyranks.common.utils.geoip.GeoInfo;
 import com.github.mbto.funnyranks.common.utils.geoip.GeoIpFormatter;
 import com.maxmind.db.CHMCache;
@@ -13,7 +10,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.types.UInteger;
-import org.jooq.types.UShort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -59,15 +55,14 @@ public class MaxMindDbService {
         }
     }
 
-    public void fillSessionByIdentityContainerWithGeoInfos(PortData portData,
-                                                           Map<Identity, List<ArchivedSessionView>> archivedSessionViewsByIdentity) {
+    public void fillIpWrappersWithGeoInfos(List<IpWrapper> ipWrappers, boolean isGameBrowser) {
         if (dbPath == null) {
             return;
         }
         lock.readLock().lock();
         try {
             if (maxmindDbReader != null && isDbUpToDate()) {
-                syncFill(portData, archivedSessionViewsByIdentity);
+                syncFill(ipWrappers, isGameBrowser);
                 return;
             }
         } finally {
@@ -86,7 +81,7 @@ public class MaxMindDbService {
         }
         try {
             if (maxmindDbReader != null) {
-                syncFill(portData, archivedSessionViewsByIdentity);
+                syncFill(ipWrappers, isGameBrowser);
             }
         } finally {
             lock.readLock().unlock();
@@ -101,50 +96,33 @@ public class MaxMindDbService {
         return lastSizeOfDb == currentSize;
     }
 
-    private void syncFill(PortData portData,
-                         Map<Identity, List<ArchivedSessionView>> archivedSessionViewsByIdentity) {
-        List<UInteger> uniqueIps = archivedSessionViewsByIdentity.values()
-                .stream()
-                .flatMap(Collection::stream)
-                .filter(archivedSessionView -> !archivedSessionView.getArchivedSession().isGeoInfoSetterInvoked()
-                                               && archivedSessionView.getArchivedSession().getIp() != null)
-                .map(archivedSessionView -> archivedSessionView.getArchivedSession().getIp())
-                .distinct()
-                .toList();
-        UShort portValue = portData.getPort().getValue();
-        if (uniqueIps.isEmpty()) {
-            log.info(portValue + " Skipping fetch data from MaxMind GeoLite2 city database, due empty uniqueIps");
+    private void syncFill(List<IpWrapper> ipWrappers, boolean isGameBrowser) {
+        boolean isDebugEnabled = log.isDebugEnabled();
+        if (ipWrappers.isEmpty()) {
+            if(isDebugEnabled) {
+                log.debug("Skipping fetch data from MaxMind GeoLite2 city database, due empty ipWrappers");
+            }
             return;
         }
-        log.info(portValue + " Fetching data from MaxMind GeoLite2 city database");
-        Map<UInteger, GeoInfo> geoInfoByIp = new HashMap<>();
-        for (UInteger uniqueIp : uniqueIps) {
-            GeoInfo geoInfo;
-            try {
-                geoInfo = GeoIpFormatter.buildGeoInfoByIp(maxmindDbReader, uniqueIp);
-            } catch (Throwable ignored) {
+        if(isDebugEnabled) {
+            log.debug("Fetching data from MaxMind GeoLite2 city database");
+        }
+        for (IpWrapper ipWrapper : ipWrappers) {
+            UInteger ip = ipWrapper.getIp();
+            if(ip == null) {
                 continue;
             }
-            geoInfoByIp.put(uniqueIp, geoInfo);
+            GeoInfo geoInfo;
+            try {
+                geoInfo = GeoIpFormatter.buildGeoInfoByIp(maxmindDbReader, ip, isGameBrowser);
+            } catch (Throwable e) {
+//                if(isDebugEnabled) {
+//                    log.debug("Failed buildGeoInfoByIp for ip=" + ip, e);
+//                }
+                continue;
+            }
+            ipWrapper.setGeoInfo(geoInfo);
         }
-        archivedSessionViewsByIdentity.values()
-                .stream()
-                .flatMap(Collection::stream)
-                .filter(ags -> !ags.getArchivedSession().isGeoInfoSetterInvoked())
-                .forEach(archivedSessionView -> {
-                    Session session = archivedSessionView.getArchivedSession();
-                    UInteger ip = session.getIp();
-                    if (ip == null) {
-                        session.setGeoInfoSetterInvoked(true);
-                        return;
-                    }
-                    GeoInfo geoInfo = geoInfoByIp.get(ip);
-                    if (geoInfo == null) {
-                        session.setGeoInfoSetterInvoked(true);
-                        return;
-                    }
-                    session.setGeoInfo(geoInfo);
-                });
     }
 
     private boolean reopenMaxmindDbReader() {

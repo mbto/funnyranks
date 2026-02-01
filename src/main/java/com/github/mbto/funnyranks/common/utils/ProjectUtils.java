@@ -21,6 +21,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.*;
+import org.jooq.Record;
 import org.jooq.conf.MappedSchema;
 import org.jooq.conf.RenderMapping;
 import org.jooq.conf.Settings;
@@ -35,7 +36,6 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
-import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.text.DecimalFormat;
@@ -49,7 +49,6 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -188,7 +187,7 @@ public class ProjectUtils {
 
     public static boolean canMakeIdentity(PortData portData, Session session) {
         ProjectMergeType mergeType = portData.getProject().getMergeType();
-        if ((mergeType == ProjectMergeType.IP && session.getIp() == null)
+        if ((mergeType == ProjectMergeType.IP && !session.getIpWrapper().isIpExist())
          || (mergeType == ProjectMergeType.Steam_ID && session.getSteamId64() == null)) {
             return false;
         }
@@ -199,7 +198,8 @@ public class ProjectUtils {
                                                                                     Map<String, Storage> storageByName,
                                                                                     boolean withCurrentSession,
                                                                                     boolean logIgnored) {
-        UShort portValue = portData.getPort().getValue();
+        Port port = portData.getPort();
+        UShort portValue = port.getValue();
         Project project = portData.getProject();
         ProjectLanguage language = project.getLanguage();
         ProjectMergeType mergeType = project.getMergeType();
@@ -238,6 +238,15 @@ public class ProjectUtils {
                                     }
                                     return false;
                                 }
+                                if(port.getIgnoreBots() && archivedSession.isBot()) {
+                                    if (logIgnored) {
+                                        logMsg = "Ignored BOT session"
+                                                 + ": " + archivedSession.toString(name, language);
+                                        log.info(portValue + " " + logMsg);
+                                        portData.addMessage(logMsg);
+                                    }
+                                    return false;
+                                }
                                 if (archivedSession.getStarted() == null || archivedSession.getFinished() == null) {
                                     if (logIgnored) {
                                         logMsg = "Ignored session, due started and finished dateTimes required"
@@ -259,14 +268,15 @@ public class ProjectUtils {
                                 }
                                 return true;
                             });
-                    if (currentSessionStream != null)
+                    if (currentSessionStream != null) {
                         sessionStream = Stream.concat(currentSessionStream, sessionStream);
+                    }
                     return sessionStream.map(archivedSession -> new ArchivedSessionView(name, archivedSession));
                 }).collect(Collectors.groupingBy(archivedSession -> {
                     if (mergeType == ProjectMergeType.Nick)
                         return new Identity(archivedSession.getName());
                     else if (mergeType == ProjectMergeType.IP)
-                        return new Identity(archivedSession.getArchivedSession().getIp());
+                        return new Identity(archivedSession.getArchivedSession().getIpWrapper().getIp());
                     else if (mergeType == ProjectMergeType.Steam_ID)
                         return new Identity(archivedSession.getArchivedSession().getSteamId64());
                     else
@@ -455,7 +465,7 @@ public class ProjectUtils {
             selectFields.add(updatableField.getLeft());
         }
         Table updatableTable = pkField.getTable();
-        CommonTableExpression<org.jooq.Record> cte = DSL.name("cte")
+        CommonTableExpression<Record> cte = DSL.name("cte")
                 .as(DSL.select(selectFields)
                         .from(updatableTable)
                         .where(pkField.eq(pkValue)));
@@ -469,21 +479,38 @@ public class ProjectUtils {
                 newCondition = targetField.isNotNull();
             } else {
                 Condition qualifiedCondition;
-                if (newValue instanceof String) // 'ddd': `cte`.`description` collate utf8mb4_bin <> 'DDD')
-                    qualifiedCondition = cte.field(targetField).collate(collation).notEqual(newValue);
-//                    qualifiedCondition = cte.field(targetField).collate(collation).notEqual(DSL.value(newValue).collate(collation));
-//                    qualifiedCondition = cte.field(targetField).notEqual(newValue);
-                else
-                    qualifiedCondition = cte.field(targetField).notEqual(newValue);
+                if (targetField.getType() == JSON.class
+                    || targetField.getType() == TreeSet.class) {
+                    qualifiedCondition = cte.field(targetField)
+                            .notEqual(DSL.val(newValue, targetField.getDataType()).cast(JSON.class));
+                } else if (newValue instanceof String) {
+                    // 'ddd': `cte`.`description` collate utf8mb4_bin <> 'DDD')
+                    qualifiedCondition = cte.field(targetField)
+                            .collate(collation)
+                            .notEqual(newValue);
+//                    qualifiedCondition = cte.field(targetField)
+//                          .collate(collation)
+//                          .notEqual(DSL.value(newValue).collate(collation));
+                } else {
+                    qualifiedCondition = cte.field(targetField)
+                            .notEqual(newValue);
+                }
                 newCondition = DSL.or(cte.field(targetField).isNull(), qualifiedCondition);
             }
             condition = condition != null ? DSL.or(condition, newCondition) : newCondition;
         }
-        UpdateSetFirstStep updateStep = dslContext.with(cte).update(updatableTable.join(cte).on(pkField.eq(cte.field(aliasedPkField))));
+        UpdateSetFirstStep updateStep = dslContext.with(cte)
+                .update(updatableTable.join(cte)
+                        .on(pkField.eq(cte.field(aliasedPkField)))
+                );
         for (Pair<Field, ?> updatableField : updatableFields) {
             Field targetField = updatableField.getLeft();
             Object newValue = updatableField.getRight();
-            updateStep.set(targetField, newValue);
+            if (targetField.getType() == TreeSet.class) {
+                updateStep.set(targetField, DSL.val(newValue, targetField.getDataType()));
+            } else {
+                updateStep.set(targetField, newValue);
+            }
         }
         return ((UpdateSetMoreStep) updateStep)
                 .where(pkField.eq(pkValue), condition)
@@ -613,24 +640,26 @@ public class ProjectUtils {
                 String randomName;
                 do {
                     randomName = StringUtils.capitalize(RandomStringUtils
-                            .randomAlphanumeric(current().nextInt(1, 32))
+                            .insecure().nextAlphanumeric(current().nextInt(1, 32))
                             .replaceAll("[a-m]", " ")
                             .replaceAll(" {2,}", " ")
                             .trim().toLowerCase());
                     if (StringUtils.isBlank(randomName))
-                        randomName = RandomStringUtils.randomAlphanumeric(1);
+                        randomName = RandomStringUtils.insecure().nextAlphanumeric(1);
                 } while (storageByName.containsKey(randomName));
                 Storage storage = new Storage();
                 for (int sessionNum = 0, sessionsCount = current().nextInt(1, 6); sessionNum < sessionsCount; sessionNum++) {
-                    if (current().nextBoolean()) {
-//                        long point = UInteger.MAX_VALUE / current().nextInt(2, 7);
-//                        storage.getSession(true).setIp(UInteger.valueOf(Ipv4.of(current().nextLong(point - 100, point + 1L)).asBigInteger().longValue()));
-                        storage.getSession(true).setIp(UInteger.valueOf(Ipv4.of(current().nextLong(UInteger.MAX_VALUE)).asBigInteger().longValue()));
+                    boolean isBot = current().nextBoolean();
+                    if (!isBot) {
+                        if(current().nextBoolean()) {
+//                            long point = UInteger.MAX_VALUE / current().nextInt(2, 7);
+//                            storage.getSession(true).setIp(UInteger.valueOf(Ipv4.of(current().nextLong(point - 100, point + 1L)).asBigInteger().longValue()));
+                            storage.getSession(true).setIp(UInteger.valueOf(Ipv4.of(current().nextLong(UInteger.MAX_VALUE)).asBigInteger().longValue()));
+                        }
+                        if (current().nextBoolean()) {
+                            storage.getSession(true).setSteamId64(current().nextLong(lastSteamId64 - 100, lastSteamId64 + 1L));
+                        }
                     }
-                    if (current().nextBoolean()) {
-                        storage.getSession(true).setSteamId64(current().nextLong(lastSteamId64 - 100, lastSteamId64 + 1L));
-                    }
-
                     for (int killNum = 0, killsCount = current().nextInt(0, 11); killNum < killsCount; killNum++) {
                         lastTouchDateTime = lastTouchDateTime.minus(current().nextInt(0, 61), generateChronoUnit());
                         storage.getSession(lastTouchDateTime).upKills();
@@ -640,8 +669,13 @@ public class ProjectUtils {
                         storage.getSession(lastTouchDateTime).upDeaths();
                     }
                     Session session = storage.getSession(false);
-                    if (session != null && session.getStarted() != null && current().nextInt(1, sessionsCount + 2) == 1) {
-                        storage.onDisconnected(session.getStarted().plus(current().nextInt(0, 61), generateChronoUnit()));
+                    if (session != null) {
+                        if(isBot) {
+                            session.setIsBot(current().nextBoolean() ? "BOT" : "");
+                        }
+                        if(session.getStarted() != null && current().nextInt(1, sessionsCount + 2) == 1) {
+                            storage.onDisconnected(session.getStarted().plus(current().nextInt(0, 61), generateChronoUnit()));
+                        }
                     }
                 }
                 if (!storage.getArchivedSessions().isEmpty() || (storage.getSession(false) != null && storage.getSession(false).getStarted() != null))
@@ -657,5 +691,31 @@ public class ProjectUtils {
             case 3: return ChronoUnit.HOURS;
         }
         throw new IllegalStateException("\uD83E\uDD23\uD83D\uDE02");
+    }
+
+/*
+L 01/08/2021 - 21:13:54: "Vinny<94><BOT><>" joined team "TERRORIST"
+L 01/08/2021 - 21:13:54: "Vinny<94><BOT><>" entered the game
+L 01/08/2021 - 22:06:23: "some player<84><STEAM_0:0:123123><CT>" killed "Vinny<94><BOT><TERRORIST>" with "knife"
+L 01/08/2021 - 22:06:29: "Vinny<94><BOT><TERRORIST>" killed "Zane<88><BOT><CT>" with "knife"
+L 01/08/2021 - 23:50:29: "Vinny<94><BOT><TERRORIST>" disconnected
+Dropped Vinny from server
+Reason:  Dropping fakeclient on level change
+*/
+    public static boolean isAuthBOT(String auth) {
+        return "BOT".equalsIgnoreCase(auth);
+    }
+
+/*
+L 01/08/2021 - 19:48:23: [REUNION]: HLTV Proxy (127.0.0.1) authorized as HLTV
+L 01/08/2021 - 19:48:23: "HLTV Proxy<56><HLTV><>" connected, address "127.0.0.1:27020"
+L 01/08/2021 - 19:48:24: "HLTV Proxy<56><HLTV><>" entered the game
+L 01/08/2021 - 19:48:24: "HLTV Proxy<56><HLTV><>" joined team "SPECTATOR"
+L 01/08/2021 - 19:48:26: "HLTV Proxy<56><HLTV><SPECTATOR>" disconnected
+Dropped HLTV Proxy from server
+Reason:  Client sent 'drop'
+*/
+    public static boolean isAuthHLTV(String auth) {
+        return "HLTV".equalsIgnoreCase(auth);
     }
 }

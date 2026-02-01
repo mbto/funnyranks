@@ -2,9 +2,12 @@ package com.github.mbto.funnyranks;
 
 import com.github.mbto.funnyranks.broker.Distributor;
 import com.github.mbto.funnyranks.common.dto.PortData;
+import com.github.mbto.funnyranks.common.dto.session.IpWrapper;
+import com.github.mbto.funnyranks.common.dto.session.Session;
 import com.github.mbto.funnyranks.common.dto.session.Storage;
 import com.github.mbto.funnyranks.common.utils.ProjectUtils;
 import com.github.mbto.funnyranks.dao.FunnyRanksDao;
+import com.github.mbto.funnyranks.service.MaxMindDbService;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
@@ -20,6 +23,8 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -43,6 +48,8 @@ public class ManualTest {
     private FunnyRanksDao funnyRanksDao;
     @Autowired
     private DSLContext funnyRanksDsl;
+    @Autowired
+    private MaxMindDbService maxMindDbService;
 
     @BeforeAll
     public static void beforeAll() {
@@ -66,6 +73,16 @@ public class ManualTest {
 //        project.setMergeType(ProjectMergeType.IP);
 //        project.setMergeType(ProjectMergeType.Steam_ID);
         ProjectUtils.fillFakes(portDataByPort, playersViewByPort);
+        List<IpWrapper> ipWrappers = new ArrayList<>();
+        for (Map<String, Storage> storageByName : playersViewByPort.values()) {
+            for (Storage storage : storageByName.values()) {
+                Session session = storage.getSession(false);
+                if(session != null) {
+                    ipWrappers.add(session.getIpWrapper());
+                }
+            }
+        }
+        maxMindDbService.fillIpWrappersWithGeoInfos(ipWrappers, false);
         // after this spring container is shutdown and autoflush sessions
     }
 

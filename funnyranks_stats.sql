@@ -70,6 +70,7 @@ CREATE TABLE `player` (
   PRIMARY KEY (`id`),
   KEY `top_cursor_cover_idx` (`level` DESC,`time_secs` DESC,`id` DESC,`kills`,`deaths`) USING BTREE,
   KEY `player_rank_level_fk_idx` (`level`),
+  KEY `lastseen_datetime_idx` (`lastseen_datetime`),
   CONSTRAINT `player_rank_level_fk_idx` FOREIGN KEY (`level`) REFERENCES `rank` (`level`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -527,12 +528,12 @@ MAX_TIME_PTS ↓         Ниже потолок            75 → 50  (врем
 PTS_PER_HOUR ↑         Больше очков за час     0.12 → 0.24 (каждый час в 2 раза ценнее)
 PTS_PER_HOUR ↓         Меньше очков за час     0.12 → 0.06 (в 2 раза медленнее)
 */
-    DECLARE PTS_PER_LVL   DOUBLE DEFAULT 1.25;   -- +1 ур. за 1.25 LN-ед.
-    DECLARE MIN_TIME_SEC  INT    DEFAULT 3*3600;
+    DECLARE PTS_PER_LVL   DOUBLE DEFAULT 0.55;
+    DECLARE MIN_TIME_SEC  INT    DEFAULT 3600;
     DECLARE MIN_KD        DOUBLE DEFAULT 0.30;
-    DECLARE TIME_WEIGHT   DOUBLE DEFAULT 0.95;   -- 95 % время
-    DECLARE MAX_TIME_PTS  DOUBLE DEFAULT 75;   -- потолок выше 72 LN-ед.
-    DECLARE PTS_PER_HOUR  DOUBLE DEFAULT 0.12; -- 0.12 LN-ед./час
+    DECLARE TIME_WEIGHT   DOUBLE DEFAULT 0.35;
+    DECLARE MAX_TIME_PTS  DOUBLE DEFAULT 120;
+    DECLARE PTS_PER_HOUR  DOUBLE DEFAULT 0.11;
 
     DECLARE skill_pts DOUBLE DEFAULT 0;
     DECLARE time_pts  DOUBLE DEFAULT 0;
@@ -1541,4 +1542,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-11-11 11:11:11
+-- Dump completed on 2026-02-01 11:11:11

@@ -602,19 +602,19 @@ public class App90Nick {
         }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         /* logs sends in parallel, so PLAYER.LAST_SERVER_NAME is undefined */
         assertPlayers(projectMaker, new String[][]{
-                {"2", "187", "121", "4939", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:25:07", null}, // 1h 22m 19s
+                {"2", "187", "121", "4939", "★☆☆☆☆☆", "彡ノノノノノ", "2", "2021-01-08 21:25:07", null}, // 1h 22m 19s
                 {"15", "121", "231", "4873", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 21m 13s
                 {"13", "110", "176", "4873", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 21m 13s
                 {"14", "143", "187", "4840", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 20m 40s
-                {"12", "231", "154", "4818", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 20m 18s
+                {"12", "231", "154", "4818", "★☆☆☆☆☆", "彡ノノノノノ", "2", "2021-01-08 21:24:58", null}, // 1h 20m 18s
                 {"11", "88", "242", "4818", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 20m 18s
                 {"5", "88", "121", "4818", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 20m 18s
                 {"8", "154", "209", "4785", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 19m 45s
-                {"4", "132", "110", "4785", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 19m 45s
-                {"9", "220", "110", "4774", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 19m 34s
-                {"10", "198", "110", "4774", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 19m 34s
+                {"4", "132", "110", "4785", "★☆☆☆☆☆", "彡ノノノノノ", "2", "2021-01-08 21:24:58", null}, // 1h 19m 45s
+                {"9", "220", "110", "4774", "★☆☆☆☆☆", "彡ノノノノノ", "2", "2021-01-08 21:24:58", null}, // 1h 19m 34s
+                {"10", "198", "110", "4774", "★☆☆☆☆☆", "彡ノノノノノ", "2", "2021-01-08 21:24:58", null}, // 1h 19m 34s
                 {"1", "154", "187", "4642", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 17m 22s
-                {"7", "220", "176", "4587", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 16m 27s
+                {"7", "220", "176", "4587", "★☆☆☆☆☆", "彡ノノノノノ", "2", "2021-01-08 21:24:58", null}, // 1h 16m 27s
                 {"3", "154", "176", "4565", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 16m 5s
                 {"16", "143", "187", "4400", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null}, // 1h 13m 20s
                 {"6", "154", "176", "4345", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:24:58", null} // 1h 12m 25s
@@ -875,10 +875,13 @@ public class App90Nick {
             logsSender.sendLogs("server4.log", 27015, 27017);
         }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
+                {"1", "51", "33", "1347", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:25:07", "Test server at 27015"} // 22m 27s
         });
         assertPlayerIps(projectMaker, new String[][]{
+                {"1", "1", "127.0.0.1", "2021-01-08 21:25:07"}
         });
         assertPlayerNames(projectMaker, new String[][]{
+                {"1", "1", "Admin", "2021-01-08 21:25:07"}
         });
         assertPlayerSteamIds(projectMaker, new String[][]{
         });
@@ -898,7 +901,7 @@ public class App90Nick {
             logsSender.sendLogs("server4.log", 27015, 27015);
         }, asList(PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         assertPlayers(projectMaker, new String[][]{
-                {"1", "0", "0", "597", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:25:07", "Test server at 27015"} // 9m 57s
+                {"1", "17", "11", "597", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:25:07", "Test server at 27015"} // 9m 57s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "127.0.0.1", "2021-01-08 21:25:07"}
@@ -925,7 +928,7 @@ public class App90Nick {
         }, asList(PLAYER.LAST_SERVER_NAME, PLAYER_IP.IP, PLAYER_IP.MAXMIND_GEONAME_ID, PLAYER_STEAMID.STEAMID64, PLAYER_STEAMID.STEAMID3));
         /* logs sends in parallel, so PLAYER.LAST_SERVER_NAME is undefined */
         assertPlayers(projectMaker, new String[][]{
-                {"1", "0", "0", "1791", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:25:07", null} // 29m 51s
+                {"1", "51", "33", "1791", "★☆☆☆☆☆", "彡ノノノノノ", "1", "2021-01-08 21:25:07", null} // 29m 51s
         });
         assertPlayerIps(projectMaker, new String[][]{
                 {"1", "1", "127.0.0.1", "2021-01-08 21:25:07"}

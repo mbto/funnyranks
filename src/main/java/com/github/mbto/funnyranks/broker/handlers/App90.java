@@ -7,11 +7,13 @@ import com.github.mbto.funnyranks.common.dto.session.Storage;
 import com.github.mbto.funnyranks.common.model.funnyranks.tables.pojos.Port;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.jooq.types.UInteger;
 import org.jooq.types.UShort;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,6 +23,7 @@ import static com.github.mbto.funnyranks.common.FlushEvent.NEW_GAME_MAP;
 import static com.github.mbto.funnyranks.common.FlushEvent.SHUTDOWN_GAME_SERVER;
 import static com.github.mbto.funnyranks.common.dto.session.StorageFetchMode.DONT_CREATE;
 import static com.github.mbto.funnyranks.broker.handlers.App90.Patterns.*;
+import static com.github.mbto.funnyranks.common.utils.ProjectUtils.isAuthHLTV;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -115,14 +118,6 @@ public class App90 extends MessageHandler {
                         }
                         return;
                     }
-                    if (port.getIgnoreBots()) {
-                        if (isAuthBOT(killerAuth) || isAuthBOT(victimAuth)) {
-                            if (log.isDebugEnabled()) {
-                                log.debug(portValue + " Skip BOT frag: " + sourceRaw + " or " + targetRaw);
-                            }
-                            return;
-                        }
-                    }
                     String killerName = sourceMatcher.group("name");
                     String victimName = targetMatcher.group("name");
 
@@ -134,7 +129,7 @@ public class App90 extends MessageHandler {
 
                         if (StringUtils.isNotBlank(killerTeam)
                                 && StringUtils.isNotBlank(victimTeam)
-                                && !StringUtils.equalsIgnoreCase(killerTeam, victimTeam)
+                                && !Strings.CI.equals(killerTeam, victimTeam)
                         ) {
                             countFrag(port, dateTime, killerName, killerAuth, victimName, victimAuth);
                         }
@@ -157,18 +152,13 @@ public class App90 extends MessageHandler {
                     if(isAuthHLTV(sourceAuth)) {
                         return;
                     }
-                    if (port.getIgnoreBots()) {
-                        // some bots generate event "connected, address"
-                        if (isAuthBOT(sourceAuth)) {
-                            return;
-                        }
-                    }
                     String sourceName = sourceMatcher.group("name");
                     String sourceIp = eventMatcher.group(3); // Possible values: "loopback:27005", "12.12.12.12:27005", "none"
                     Storage storage = allocateStorage(port, sourceName, sourceAuth, dateTime);
                     Session session = storage.getSession(true);
-
-                    session.setIp(sourceIp);
+                    if(session.setIp(sourceIp)) {
+                        getMaxMindDbService().fillIpWrappersWithGeoInfos(List.of(session.getIpWrapper()), false);
+                    }
                     return;
                 }
                 return;
@@ -184,14 +174,6 @@ public class App90 extends MessageHandler {
                             log.debug(portValue + " Skip HLTV suicide: " + sourceRaw);
                         }
                         return;
-                    }
-                    if (port.getIgnoreBots()) {
-                        if (isAuthBOT(sourceAuth)) {
-                            if (log.isDebugEnabled()) {
-                                log.debug(portValue + " Skip BOT suicide: " + sourceRaw);
-                            }
-                            return;
-                        }
                     }
                     String sourceName = sourceMatcher.group("name");
                     Storage storage = allocateStorage(port, sourceName, sourceAuth, dateTime);
@@ -211,14 +193,6 @@ public class App90 extends MessageHandler {
                             log.debug(portValue + " Skip HLTV changed name: " + sourceRaw);
                         }
                         return;
-                    }
-                    if (port.getIgnoreBots()) {
-                        if (isAuthBOT(sourceAuth)) {
-                            if (log.isDebugEnabled()) {
-                                log.debug(portValue + " Skip BOT changed name: " + sourceRaw);
-                            }
-                            return;
-                        }
                     }
                     String sourceName = sourceMatcher.group("name");
                     String sourceNewName = eventMatcher.group(3);
@@ -240,11 +214,6 @@ public class App90 extends MessageHandler {
                     String sourceAuth = sourceMatcher.group("auth");
                     if(isAuthHLTV(sourceAuth)) {
                         return;
-                    }
-                    if (port.getIgnoreBots()) {
-                        if (isAuthBOT(sourceAuth)) {
-                            return;
-                        }
                     }
                     String sourceName = sourceMatcher.group("name");
                     Storage storage = allocateStorage(port, sourceName, sourceAuth, dateTime);

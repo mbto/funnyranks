@@ -3,9 +3,9 @@ package com.github.mbto.funnyranks.common.dto.session;
 import com.github.jgonian.ipmath.Ipv4;
 import com.github.mbto.funnyranks.common.model.funnyranks.enums.ProjectLanguage;
 import com.github.mbto.funnyranks.common.utils.ProjectUtils;
-import com.github.mbto.funnyranks.common.utils.geoip.GeoInfo;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.jooq.types.UInteger;
 
 import java.time.Duration;
@@ -16,13 +16,9 @@ import static com.github.mbto.funnyranks.common.utils.ProjectUtils.convertSteamI
 @Getter
 @Setter
 public class Session {
-    private UInteger ip;
+    private IpWrapper ipWrapper = new IpWrapper();
     private Long steamId64;
-    private GeoInfo geoInfo;
-//    private String geoInfo;
-    private boolean ipSetterInvoked;
-    private boolean steamId64SetterInvoked;
-    private boolean geoInfoSetterInvoked;
+    private boolean isBot;
     private long kills;
     private long deaths;
     private LocalDateTime started;
@@ -64,66 +60,61 @@ public class Session {
         }
     }
 
-    public void setIp(UInteger ip) {
-        if (ipSetterInvoked || this.ip != null) {
-            return;
+    @SuppressWarnings("UnusedReturnValue")
+    public boolean setIp(UInteger ip) {
+        if (ipWrapper.isIpExist()) {
+            return false;
         }
-        this.ip = ip;
-        ipSetterInvoked = true;
+        ipWrapper.setIp(ip);
+        return true;
     }
 
-    public void setIp(String ip) {
-        if (ipSetterInvoked || this.ip != null) {
-            return;
+    public boolean setIp(String ip) {
+        if(StringUtils.isBlank(ip)) {
+            return false;
         }
         ip = ProjectUtils.extractIp(ip);
         if (ip != null) {
-            this.ip = UInteger.valueOf(Ipv4.parse(ip).asBigInteger().longValue());
+            ipWrapper.setIp(UInteger.valueOf(Ipv4.parse(ip).asBigInteger().longValue()));
         }
-        ipSetterInvoked = true;
+        return ipWrapper.isIpExist();
     }
 
     public void setSteamId64(Long steamId64) {
-        if (steamId64SetterInvoked || this.steamId64 != null) {
+        if (this.steamId64 != null) {
             return;
         }
         this.steamId64 = steamId64;
-        steamId64SetterInvoked = true;
     }
 
     public void setSteamId64(String steamId2) {
-        if (steamId64SetterInvoked || this.steamId64 != null) {
+        if(StringUtils.isBlank(steamId2)) {
             return;
         }
         steamId2 = ProjectUtils.extractSteamId(steamId2);
         if (steamId2 != null) {
             this.steamId64 = ProjectUtils.convertSteamId2ToSteamId64(steamId2);
         }
-        steamId64SetterInvoked = true;
     }
 
-//    public void setGeoInfo(String geoInfo) {
-    public void setGeoInfo(GeoInfo geoInfo) {
-        if (geoInfoSetterInvoked) {
+    public void setIsBot(String steamId2) {
+        if(StringUtils.isBlank(steamId2)) {
             return;
         }
-        this.geoInfo = geoInfo;
-        geoInfoSetterInvoked = true;
+        this.isBot = ProjectUtils.isAuthBOT(steamId2);
     }
 
     @Override
     public String toString() {
         return "Session{" +
-               "ip=" + (ip != null ? Ipv4.of(ip.longValue()).toString() : null) +
+               "ip=" + (ipWrapper.isIpExist() ? Ipv4.of(ipWrapper.getIp().longValue()).toString() : null) +
                ", steamId=" + convertSteamId64ToSteamId2(steamId64) +
+               ", isBot=" + isBot +
                ", kills=" + kills +
                ", deaths=" + deaths +
                ", started=" + started +
                ", finished=" + finished +
-               ", geoInfo=" + geoInfo +
-               ", ipSetterInvoked=" + ipSetterInvoked +
-               ", steamId64SetterInvoked=" + steamId64SetterInvoked +
-               ", geoInfoSetterInvoked=" + geoInfoSetterInvoked +
+               ", geoInfo=" + ipWrapper.getGeoInfo() +
                '}';
     }
 
@@ -137,12 +128,10 @@ public class Session {
                + ", deaths=" + deaths
                + (gamingTimeSecs != null ? ", time=" + gamingTimeSecs + "s ("
                 + ProjectUtils.humanLifetime(gamingTimeSecs * 1000) + ")" : "")
-               + ", ip=" + (ip != null ? Ipv4.of(ip.longValue()) : null)
+               + ", ip=" + (ipWrapper.isIpExist() ? Ipv4.of(ipWrapper.getIp().longValue()) : null)
                + ", steamId=" + convertSteamId64ToSteamId2(steamId64)
-               + ", geoInfo=" + (geoInfo != null ? geoInfo.locationByProjectLanguage(projectLanguage) : null)
-//               + ", ipSetterInvoked=" + ipSetterInvoked
-//               + ", steamId64SetterInvoked=" + steamId64SetterInvoked
-//               + ", geoInfoSetterInvoked=" + geoInfoSetterInvoked
+               + ", isBot=" + isBot
+               + ", geoInfo=" + (ipWrapper.getGeoInfo() != null ? ipWrapper.getGeoInfo().locationByProjectLanguage(projectLanguage) : null)
         ;
     }
 }

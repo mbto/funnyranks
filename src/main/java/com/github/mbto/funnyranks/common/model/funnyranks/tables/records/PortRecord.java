@@ -148,16 +148,16 @@ public class PortRecord extends UpdatableRecordImpl<PortRecord> {
     }
 
     /**
-     * Setter for <code>funnyranks.port.ignore_bots</code>. 1-ignore statistics,
-     * when killer or victim is BOT; 0-don't ignore (include all player's)
+     * Setter for <code>funnyranks.port.ignore_bots</code>. 1-ignore bots in
+     * statistics; 0-don't ignore (include all player's)
      */
     public void setIgnoreBots(Boolean value) {
         set(8, value);
     }
 
     /**
-     * Getter for <code>funnyranks.port.ignore_bots</code>. 1-ignore statistics,
-     * when killer or victim is BOT; 0-don't ignore (include all player's)
+     * Getter for <code>funnyranks.port.ignore_bots</code>. 1-ignore bots in
+     * statistics; 0-don't ignore (include all player's)
      */
     public Boolean getIgnoreBots() {
         return (Boolean) get(8);

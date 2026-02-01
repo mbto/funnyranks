@@ -2,6 +2,7 @@ package com.github.mbto.funnyranks.common.dto.identity;
 
 import com.github.jgonian.ipmath.Ipv4;
 import com.github.mbto.funnyranks.common.dto.session.ArchivedSessionView;
+import com.github.mbto.funnyranks.common.dto.session.IpWrapper;
 import com.github.mbto.funnyranks.common.dto.session.Session;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,9 +33,11 @@ public class IdentityView {
         if (finished != null)
             this.lifeTime = humanLifetime(started, finished);
         this.dates = YYYYMMDD_HHMMSS_PATTERN.format(started) + (finished != null ? " - " + YYYYMMDD_HHMMSS_PATTERN.format(finished) : "");
-        UInteger ip = currentOrArchivedSession.getIp();
-        if (ip != null)
+        IpWrapper ipWrapper = currentOrArchivedSession.getIpWrapper();
+        UInteger ip = ipWrapper.getIp();
+        if(ip != null) {
             this.ip = Ipv4.of(ip.longValue()).toString();
+        }
         this.steamId = convertSteamId64ToSteamId2(currentOrArchivedSession.getSteamId64());
     }
 }

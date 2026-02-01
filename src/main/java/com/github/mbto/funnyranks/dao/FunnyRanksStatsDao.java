@@ -4,6 +4,7 @@ import com.github.jgonian.ipmath.Ipv4;
 import com.github.mbto.funnyranks.common.dto.PortData;
 import com.github.mbto.funnyranks.common.dto.identity.Identity;
 import com.github.mbto.funnyranks.common.dto.session.ArchivedSessionView;
+import com.github.mbto.funnyranks.common.dto.session.IpWrapper;
 import com.github.mbto.funnyranks.common.dto.session.Session;
 import com.github.mbto.funnyranks.common.model.funnyranks.enums.ProjectMergeType;
 import com.github.mbto.funnyranks.common.model.funnyranks.tables.pojos.Port;
@@ -155,15 +156,17 @@ public class FunnyRanksStatsDao {
                             totalDeaths += archivedSession.getDeaths();
                             totalGamingTimeSecsSecs += archivedSession.calcGamingTimeSecs();
                             plannedNames.add(archivedSessionView.getName());
-                            if (archivedSession.getIp() != null) {
+                            IpWrapper ipWrapper = archivedSession.getIpWrapper();
+                            if (ipWrapper.isIpExist()) {
                                 if (plannedIps == null) {
                                     plannedIps = plannedDataContainerSupplier.get();
                                 }
-                                plannedIps.add(archivedSession.getIp());
+                                UInteger ip = ipWrapper.getIp();
+                                plannedIps.add(ip);
                                 if (geoInfoByByIp == null) {
                                     geoInfoByByIp = new HashMap<>();
                                 }
-                                geoInfoByByIp.put(archivedSession.getIp(), archivedSession.getGeoInfo());
+                                geoInfoByByIp.put(ip, ipWrapper.getGeoInfo());
                             }
                             if (archivedSession.getSteamId64() != null) {
                                 if (plannedSteamIds64 == null)
